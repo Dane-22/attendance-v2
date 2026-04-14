@@ -1,0 +1,54 @@
+# PHP / Composer
+/vendor/
+composer.lock
+composer.phar
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+/logs/
+*.log
+
+# Cache
+/cache/
+/tmp/
+
+# Uploads (keep structure but ignore contents)
+/uploads/*
+!/uploads/.gitkeep
+
+# Session files
+/sessions/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Database dumps
+*.sql.gz
+*.sql.zip
+database/backups/
+
+# Node modules (if using npm/yarn)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build artifacts
+/dist/
+/build/
