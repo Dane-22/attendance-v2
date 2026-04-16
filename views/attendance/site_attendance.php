@@ -619,6 +619,7 @@ let currentEmployees = [];
 let currentFilter = 'all';
 const basePath = window.location.origin;
 const jwtToken = <?= json_encode($_SESSION['jwt_token'] ?? null) ?>;
+console.log('JWT Token available:', !!jwtToken, 'Token preview:', jwtToken ? jwtToken.substring(0, 20) + '...' : 'none');
 
 function selectProject(element, branchCode) {
     // Update UI
