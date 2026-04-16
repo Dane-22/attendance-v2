@@ -356,20 +356,57 @@ ob_start();
     window.addEventListener('offline', updateOnlineStatus);
     updateOnlineStatus();
 
-    // Initialize camera
+    // Initialize camera with fallback constraints for mobile compatibility
     async function initCamera() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment' }
-            });
-            video.srcObject = stream;
-            video.play();
-            loading.style.display = 'none';
-            requestAnimationFrame(scanQR);
-        } catch (err) {
-            loading.textContent = 'Camera access denied. Please allow camera access.';
-            console.error('Camera error:', err);
+        const constraints = [
+            // Try environment camera first (back camera)
+            { video: { facingMode: { exact: 'environment' } } },
+            // Try facingMode: environment without exact constraint
+            { video: { facingMode: 'environment' } },
+            // Try any camera with high resolution
+            { video: { width: { ideal: 1920 }, height: { ideal: 1080 } } },
+            // Finally, try any video
+            { video: true }
+        ];
+
+        for (let i = 0; i < constraints.length; i++) {
+            try {
+                console.log('Trying camera constraint:', constraints[i]);
+                const stream = await navigator.mediaDevices.getUserMedia(constraints[i]);
+                video.srcObject = stream;
+                await video.play();
+                loading.style.display = 'none';
+                requestAnimationFrame(scanQR);
+                console.log('Camera initialized successfully with constraint', i);
+                return;
+            } catch (err) {
+                console.warn(`Camera constraint ${i} failed:`, err.message);
+                // Continue to next constraint
+            }
         }
+
+        // All constraints failed
+        loading.innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+                <p style="margin-bottom: 15px;">Camera access failed.</p>
+                <p style="font-size: 0.9rem; color: #888; margin-bottom: 15px;">
+                    Please ensure:<br>
+                    - You're using HTTPS (required for camera)<br>
+                    - Camera permissions are allowed in browser settings<br>
+                    - Try refreshing the page
+                </p>
+                <button onclick="initCamera()" style="
+                    background: #ffd700;
+                    color: #000;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                ">Retry Camera</button>
+            </div>
+        `;
+        console.error('All camera constraints failed');
     }
 
     // Scan QR code from video frame
@@ -474,8 +511,21 @@ ob_start();
         }
     }
 
-    // Start camera
-    initCamera();
+    // Check HTTPS requirement for camera (mobile browsers require HTTPS)
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        loading.innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+                <p style="color: #ef4444; margin-bottom: 15px;">HTTPS Required</p>
+                <p style="font-size: 0.9rem; color: #888;">
+                    Camera access requires a secure HTTPS connection on mobile devices.<br>
+                    Please access this page via HTTPS.
+                </p>
+            </div>
+        `;
+    } else {
+        // Start camera
+        initCamera();
+    }
 </script>
 
 <?php $content = ob_get_clean(); ?>
