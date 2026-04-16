@@ -358,14 +358,11 @@ ob_start();
 
     // Initialize camera with fallback constraints for mobile compatibility
     async function initCamera() {
+        let lastError = null;
         const constraints = [
-            // Try environment camera first (back camera)
-            { video: { facingMode: { exact: 'environment' } } },
-            // Try facingMode: environment without exact constraint
+            { video: { facingMode: { ideal: 'environment' } } },
             { video: { facingMode: 'environment' } },
-            // Try any camera with high resolution
-            { video: { width: { ideal: 1920 }, height: { ideal: 1080 } } },
-            // Finally, try any video
+            { video: { width: { ideal: 1280 }, height: { ideal: 720 } } },
             { video: true }
         ];
 
@@ -377,23 +374,50 @@ ob_start();
                 await video.play();
                 loading.style.display = 'none';
                 requestAnimationFrame(scanQR);
-                console.log('Camera initialized successfully with constraint', i);
+                console.log('Camera initialized successfully');
                 return;
             } catch (err) {
-                console.warn(`Camera constraint ${i} failed:`, err.message);
-                // Continue to next constraint
+                lastError = err;
+                console.warn(`Camera constraint ${i} failed:`, err.name, err.message);
             }
         }
 
-        // All constraints failed
+        // All constraints failed - show specific error
+        let errorMsg = 'Unknown error';
+        if (lastError) {
+            if (lastError.name === 'NotAllowedError' || lastError.name === 'PermissionDeniedError') {
+                errorMsg = 'Permission denied. Please allow camera access in your browser settings and refresh.';
+            } else if (lastError.name === 'NotFoundError' || lastError.name === 'DevicesNotFoundError') {
+                errorMsg = 'No camera found on this device.';
+            } else if (lastError.name === 'NotReadableError' || lastError.name === 'TrackStartError') {
+                errorMsg = 'Camera is already in use by another app.';
+            } else if (lastError.name === 'OverconstrainedError') {
+                errorMsg = 'Camera constraints not supported.';
+            } else {
+                errorMsg = `${lastError.name}: ${lastError.message}`;
+            }
+        }
+
+        // Try to list available cameras
+        let cameraOptions = '';
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const cameras = devices.filter(d => d.kind === 'videoinput');
+            if (cameras.length > 0) {
+                cameraOptions = '<p style="color: #ffd700; margin: 10px 0;">Cameras found: ' + cameras.length + '</p>';
+            }
+        } catch (e) {
+            console.log('Could not enumerate devices:', e);
+        }
+
         loading.innerHTML = `
             <div style="text-align: center; padding: 20px;">
-                <p style="margin-bottom: 15px;">Camera access failed.</p>
-                <p style="font-size: 0.9rem; color: #888; margin-bottom: 15px;">
-                    Please ensure:<br>
-                    - You're using HTTPS (required for camera)<br>
-                    - Camera permissions are allowed in browser settings<br>
-                    - Try refreshing the page
+                <p style="color: #ef4444; margin-bottom: 10px;">Camera Error</p>
+                <p style="font-size: 0.85rem; color: #ccc; margin-bottom: 15px;">${errorMsg}</p>
+                ${cameraOptions}
+                <p style="font-size: 0.8rem; color: #888; margin-bottom: 15px;">
+                    Protocol: ${location.protocol}<br>
+                    User Agent: ${navigator.userAgent.split(' ').pop()}
                 </p>
                 <button onclick="initCamera()" style="
                     background: #ffd700;
@@ -403,10 +427,20 @@ ob_start();
                     border-radius: 8px;
                     font-weight: 600;
                     cursor: pointer;
-                ">Retry Camera</button>
+                    margin-right: 10px;
+                ">Retry</button>
+                <button onclick="location.reload()" style="
+                    background: rgba(255,255,255,0.2);
+                    color: #fff;
+                    border: 1px solid rgba(255,255,255,0.3);
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                ">Reload Page</button>
             </div>
         `;
-        console.error('All camera constraints failed');
+        console.error('All camera constraints failed:', lastError);
     }
 
     // Scan QR code from video frame
