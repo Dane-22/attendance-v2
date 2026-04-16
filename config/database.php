@@ -3,6 +3,6 @@
 return [
     'host' => 'localhost',
     'database' => 'attendance-system',
-    'username' => 'root',
-    'password' => ''
+    'username' => 'attendance_user',
+    'password' => 'SecurePass123!'
 ];
