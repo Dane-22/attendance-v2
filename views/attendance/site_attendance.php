@@ -609,10 +609,15 @@ ob_start();
 </div>
 
 <script>
+// Force HTTPS for API calls
+if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    window.location.href = window.location.href.replace('http:', 'https:');
+}
+
 let currentBranchCode = null;
 let currentEmployees = [];
 let currentFilter = 'all';
-const basePath = '<?= dirname($_SERVER['SCRIPT_NAME']) ?>';
+const basePath = window.location.origin;
 
 function selectProject(element, branchCode) {
     // Update UI
