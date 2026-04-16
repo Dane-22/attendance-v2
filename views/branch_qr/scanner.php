@@ -511,21 +511,8 @@ ob_start();
         }
     }
 
-    // Check HTTPS requirement for camera (mobile browsers require HTTPS)
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-        loading.innerHTML = `
-            <div style="text-align: center; padding: 20px;">
-                <p style="color: #ef4444; margin-bottom: 15px;">HTTPS Required</p>
-                <p style="font-size: 0.9rem; color: #888;">
-                    Camera access requires a secure HTTPS connection on mobile devices.<br>
-                    Please access this page via HTTPS.
-                </p>
-            </div>
-        `;
-    } else {
-        // Start camera
-        initCamera();
-    }
+    // Start camera (HTTPS check disabled - handled by browser)
+    initCamera();
 </script>
 
 <?php $content = ob_get_clean(); ?>
