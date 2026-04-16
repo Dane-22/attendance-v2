@@ -245,12 +245,12 @@ ob_start();
     }
 
     function editBranch(id) {
-        window.location.href = '/jajr-v2/branches/edit/' + id;
+        window.location.href = '/branches/edit/' + id;
     }
 
     function deleteBranch(id) {
         if (confirm('Are you sure you want to delete this branch?')) {
-            window.location.href = '/jajr-v2/branches/delete/' + id;
+            window.location.href = '/branches/delete/' + id;
         }
     }
 </script>

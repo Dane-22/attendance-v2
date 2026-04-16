@@ -400,7 +400,7 @@ ob_start();
         scanCooldown = true;
         
         try {
-            const response = await fetch('/jajr-v2/branch/scan', {
+            const response = await fetch('/branch/scan', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
@@ -470,7 +470,7 @@ ob_start();
 
     function logout() {
         if (confirm('Logout from this branch device?')) {
-            window.location.href = '/jajr-v2/branch/logout';
+            window.location.href = '/branch/logout';
         }
     }
 

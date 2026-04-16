@@ -378,7 +378,7 @@ function getAvatarInitials($emp) {
             <?php if ($initials): ?>
                 <?= $initials ?>
             <?php else: ?>
-                <img src="/jajr-v2/<?= htmlspecialchars($employee['profile_image']) ?>" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                <img src="/<?= htmlspecialchars($employee['profile_image']) ?>" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
             <?php endif; ?>
         </div>
         <div class="employee-info">
@@ -409,7 +409,7 @@ function getAvatarInitials($emp) {
             <h2>Add New Employee</h2>
             <button class="modal-close" onclick="closeAddEmployeeModal()">&times;</button>
         </div>
-        <form id="addEmployeeForm" method="POST" action="/jajr-v2/employee/create" enctype="multipart/form-data">
+        <form id="addEmployeeForm" method="POST" action="/employee/create" enctype="multipart/form-data">
             
             <!-- Profile Information -->
             <div class="form-section">
@@ -491,7 +491,7 @@ function getAvatarInitials($emp) {
                 <h3 class="form-section-title">Profile Image</h3>
                 <div class="profile-image-section">
                     <div class="profile-preview" id="profilePreview">
-                        <img src="/jajr-v2/assets/images/default-avatar.png" alt="Default Avatar" id="previewImg">
+                        <img src="/assets/images/default-avatar.png" alt="Default Avatar" id="previewImg">
                     </div>
                     <div class="profile-upload">
                         <label for="profile_image" class="upload-btn">
@@ -599,7 +599,7 @@ function getAvatarInitials($emp) {
                 <h3 class="form-section-title">Profile Image</h3>
                 <div class="profile-image-section">
                     <div class="profile-preview" id="editProfilePreview">
-                        <img src="/jajr-v2/assets/images/default-avatar.png" alt="Avatar" id="editPreviewImg">
+                        <img src="/assets/images/default-avatar.png" alt="Avatar" id="editPreviewImg">
                     </div>
                     <div class="profile-upload">
                         <label for="edit_profile_image" class="upload-btn">
@@ -973,7 +973,7 @@ function getAvatarInitials($emp) {
 
         // Fetch next code from server
         try {
-            const response = await fetch('/jajr-v2/employee/next-code', {
+            const response = await fetch('/employee/next-code', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -1038,7 +1038,7 @@ function getAvatarInitials($emp) {
         document.body.style.overflow = '';
         document.getElementById('addEmployeeForm').reset();
         document.getElementById('employee_code').value = '';
-        document.getElementById('previewImg').src = '/jajr-v2/assets/images/default-avatar.png';
+        document.getElementById('previewImg').src = '/assets/images/default-avatar.png';
     }
 
     function previewImage(event) {
@@ -1057,12 +1057,12 @@ function getAvatarInitials($emp) {
     }
 
     function viewEmployee(id) {
-        window.location.href = '/jajr-v2/employee/view/' + id;
+        window.location.href = '/employee/view/' + id;
     }
 
     async function editEmployee(id) {
         try {
-            const response = await fetch('/jajr-v2/employee/get/' + id);
+            const response = await fetch('/employee/get/' + id);
             const employee = await response.json();
             
             if (employee.error) {
@@ -1085,13 +1085,13 @@ function getAvatarInitials($emp) {
             // Set profile image
             const previewImg = document.getElementById('editPreviewImg');
             if (employee.profile_image) {
-                previewImg.src = '/jajr-v2/' + employee.profile_image;
+                previewImg.src = '/' + employee.profile_image;
             } else {
-                previewImg.src = '/jajr-v2/assets/images/default-avatar.png';
+                previewImg.src = '/assets/images/default-avatar.png';
             }
             
             // Set form action
-            document.getElementById('editEmployeeForm').action = '/jajr-v2/employee/edit/' + id;
+            document.getElementById('editEmployeeForm').action = '/employee/edit/' + id;
             
             // Show modal
             document.getElementById('editEmployeeModal').classList.add('show');
@@ -1106,7 +1106,7 @@ function getAvatarInitials($emp) {
         document.getElementById('editEmployeeModal').classList.remove('show');
         document.body.style.overflow = '';
         document.getElementById('editEmployeeForm').reset();
-        document.getElementById('editPreviewImg').src = '/jajr-v2/assets/images/default-avatar.png';
+        document.getElementById('editPreviewImg').src = '/assets/images/default-avatar.png';
     }
 
     function previewEditImage(event) {
@@ -1126,7 +1126,7 @@ function getAvatarInitials($emp) {
 
     function deleteEmployee(id) {
         if (confirm('Are you sure you want to delete this employee? This action cannot be undone.')) {
-            fetch('/jajr-v2/employee/delete/' + id, {
+            fetch('/employee/delete/' + id, {
                 method: 'POST',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'

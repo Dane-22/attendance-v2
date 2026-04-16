@@ -182,7 +182,7 @@ ob_start();
     </div>
     <?php endif; ?>
 
-    <form method="POST" action="/jajr-v2/branch/login">
+    <form method="POST" action="/branch/login">
         <div class="form-group">
             <label for="branch_code">Select Branch</label>
             <select id="branch_code" name="branch_code" required>
@@ -211,7 +211,7 @@ ob_start();
     </form>
 
     <div class="back-link">
-        <a href="/jajr-v2/login"><i class="fas fa-arrow-left"></i> Back to Admin Login</a>
+        <a href="/login"><i class="fas fa-arrow-left"></i> Back to Admin Login</a>
     </div>
 </div>
 

@@ -438,36 +438,36 @@
                 </div>
             </div>
             <nav class="nav-menu">
-                <a href="/jajr-v2/dashboard" class="nav-item <?= ($_SERVER["REQUEST_URI"] == "/jajr-v2/" || strpos($_SERVER["REQUEST_URI"], "/dashboard") !== false) ? "active" : "" ?>">
+                <a href="/dashboard" class="nav-item <?= ($_SERVER["REQUEST_URI"] == "/" || strpos($_SERVER["REQUEST_URI"], "/dashboard") !== false) ? "active" : "" ?>">
                     <i class="fas fa-th-large"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="/jajr-v2/attendance" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/attendance") !== false ? "active" : "" ?>">
+                <a href="/attendance" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/attendance") !== false ? "active" : "" ?>">
                     <i class="fas fa-map-marker-alt"></i>
                     <span>Site Attendance</span>
                 </a>
-                <a href="/jajr-v2/notifications" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/notifications") !== false ? "active" : "" ?>">
+                <a href="/notifications" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/notifications") !== false ? "active" : "" ?>">
                     <i class="fas fa-bell"></i>
                     <span>Notification</span>
                     <span class="nav-badge">12</span>
                 </a>
-                <a href="/jajr-v2/employee" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/employee") !== false ? "active" : "" ?>">
+                <a href="/employee" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/employee") !== false ? "active" : "" ?>">
                     <i class="fas fa-users"></i>
                     <span>Employee List</span>
                 </a>
-                <a href="/jajr-v2/branches" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/branches") !== false ? "active" : "" ?>">
+                <a href="/branches" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/branches") !== false ? "active" : "" ?>">
                     <i class="fas fa-building"></i>
                     <span>Branches</span>
                 </a>
-                <a href="/jajr-v2/documents" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/documents") !== false ? "active" : "" ?>">
+                <a href="/documents" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/documents") !== false ? "active" : "" ?>">
                     <i class="fas fa-file-alt"></i>
                     <span>Documents</span>
                 </a>
-                <a href="/jajr-v2/activity-logs" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/activity-logs") !== false ? "active" : "" ?>">
+                <a href="/activity-logs" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/activity-logs") !== false ? "active" : "" ?>">
                     <i class="fas fa-list-alt"></i>
                     <span>Activity Logs</span>
                 </a>
-                <a href="/jajr-v2/attendance-audit" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/attendance-audit") !== false ? "active" : "" ?>">
+                <a href="/attendance-audit" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/attendance-audit") !== false ? "active" : "" ?>">
                     <i class="fas fa-clipboard-check"></i>
                     <span>Attendance Audit</span>
                 </a>
@@ -477,22 +477,22 @@
                     <i class="fas fa-chevron-down submenu-icon" id="financeIcon"></i>
                 </div>
                 <div class="submenu" id="financeSubmenu" style="display: <?= strpos($_SERVER["REQUEST_URI"], "/finance") !== false ? 'block' : 'none' ?>;">
-                    <a href="/jajr-v2/finance/payroll" class="submenu-item <?= strpos($_SERVER["REQUEST_URI"], "/finance/payroll") !== false ? 'active' : '' ?>">Payroll</a>
-                    <a href="/jajr-v2/finance/overtime" class="submenu-item <?= strpos($_SERVER["REQUEST_URI"], "/finance/overtime") !== false ? 'active' : '' ?>">Overtime</a>
-                    <a href="/jajr-v2/finance/billing" class="submenu-item <?= strpos($_SERVER["REQUEST_URI"], "/finance/billing") !== false ? 'active' : '' ?>">Billing</a>
-                    <a href="/jajr-v2/finance/cash-advance" class="submenu-item <?= strpos($_SERVER["REQUEST_URI"], "/finance/cash-advance") !== false ? 'active' : '' ?>">Cash Advance</a>
+                    <a href="/finance/payroll" class="submenu-item <?= strpos($_SERVER["REQUEST_URI"], "/finance/payroll") !== false ? 'active' : '' ?>">Payroll</a>
+                    <a href="/finance/overtime" class="submenu-item <?= strpos($_SERVER["REQUEST_URI"], "/finance/overtime") !== false ? 'active' : '' ?>">Overtime</a>
+                    <a href="/finance/billing" class="submenu-item <?= strpos($_SERVER["REQUEST_URI"], "/finance/billing") !== false ? 'active' : '' ?>">Billing</a>
+                    <a href="/finance/cash-advance" class="submenu-item <?= strpos($_SERVER["REQUEST_URI"], "/finance/cash-advance") !== false ? 'active' : '' ?>">Cash Advance</a>
                 </div>
-                <a href="/jajr-v2/procurement" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/procurement") !== false ? "active" : "" ?>">
+                <a href="/procurement" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/procurement") !== false ? "active" : "" ?>">
                     <i class="fas fa-shopping-cart"></i>
                     <span>Procurement</span>
                 </a>
-                <a href="/jajr-v2/settings" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/settings") !== false ? "active" : "" ?>">
+                <a href="/settings" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/settings") !== false ? "active" : "" ?>">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
                 </a>
             </nav>
             <div class="sidebar-footer">
-                <a href="/jajr-v2/logout" class="nav-item" style="border-top: 1px solid var(--border-color); margin-top: auto;">
+                <a href="/logout" class="nav-item" style="border-top: 1px solid var(--border-color); margin-top: auto;">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Log Out</span>
                 </a>
@@ -545,7 +545,7 @@
                                 <span>Settings</span>
                             </a>
                             <div style="border-top: 1px solid var(--border-color); margin: 4px 0;"></div>
-                            <a href="/jajr-v2/logout" class="dropdown-item">
+                            <a href="/logout" class="dropdown-item">
                                 <i class="fas fa-sign-out-alt"></i>
                                 <span>Logout</span>
                             </a>

@@ -1,10 +1,10 @@
 <?php
 // Finance submenu layout
 $financeMenu = [
-    ['label' => 'Payroll', 'icon' => 'fa-money-check-alt', 'url' => '/jajr-v2/finance/payroll', 'id' => 'payroll'],
-    ['label' => 'Overtime', 'icon' => 'fa-clock', 'url' => '/jajr-v2/finance/overtime', 'id' => 'overtime'],
-    ['label' => 'Cash Advance', 'icon' => 'fa-hand-holding-usd', 'url' => '/jajr-v2/finance/cash-advance', 'id' => 'cash-advance'],
-    ['label' => 'Billing', 'icon' => 'fa-file-invoice-dollar', 'url' => '/jajr-v2/finance/billing', 'id' => 'billing'],
+    ['label' => 'Payroll', 'icon' => 'fa-money-check-alt', 'url' => '/finance/payroll', 'id' => 'payroll'],
+    ['label' => 'Overtime', 'icon' => 'fa-clock', 'url' => '/finance/overtime', 'id' => 'overtime'],
+    ['label' => 'Cash Advance', 'icon' => 'fa-hand-holding-usd', 'url' => '/finance/cash-advance', 'id' => 'cash-advance'],
+    ['label' => 'Billing', 'icon' => 'fa-file-invoice-dollar', 'url' => '/finance/billing', 'id' => 'billing'],
 ];
 ?>
 

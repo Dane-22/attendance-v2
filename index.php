@@ -44,7 +44,7 @@ if (!empty($_SESSION['employee_id'])) {
                     <a href="#features" class="nav-link-attendance text-sm">Features</a>
                     <a href="#solutions" class="nav-link-attendance text-sm">Solutions</a>
                     <a href="#pricing" class="nav-link-attendance text-sm">Pricing</a>
-                    <a href="/jajr-v2/login" class="nav-link-attendance text-sm">Log In</a>
+                    <a href="/login" class="nav-link-attendance text-sm">Log In</a>
                     <a href="" class="btn-orange-primary text-sm py-2 px-5">Get Started</a>
                 </div>
 
@@ -66,7 +66,7 @@ if (!empty($_SESSION['employee_id'])) {
                 <a href="#features" class="text-white text-lg font-medium py-2 hover:text-orange-500 transition" onclick="closeMobileMenu()">Features</a>
                 <a href="#solutions" class="text-white text-lg font-medium py-2 hover:text-orange-500 transition" onclick="closeMobileMenu()">Solutions</a>
                 <a href="#pricing" class="text-white text-lg font-medium py-2 hover:text-orange-500 transition" onclick="closeMobileMenu()">Pricing</a>
-                <a href="/jajr-v2/login" class="text-white text-lg font-medium py-2 hover:text-orange-500 transition">Log In</a>
+                <a href="/login" class="text-white text-lg font-medium py-2 hover:text-orange-500 transition">Log In</a>
                 <a href="signup.php" class="btn-orange-primary text-center mt-2">Get Started</a>
             </div>
         </div>
@@ -966,7 +966,7 @@ if (!empty($_SESSION['employee_id'])) {
                             </a>
                         </li>
                         <li>
-                            <a href="/jajr-v2/login" class="text-gray-500 hover:text-orange-500 transition-colors text-sm flex items-center gap-2 group">
+                            <a href="/login" class="text-gray-500 hover:text-orange-500 transition-colors text-sm flex items-center gap-2 group">
                                 <span class="w-1.5 h-1.5 rounded-full bg-gray-700 group-hover:bg-orange-500 transition-colors"></span>
                                 Login / Sign Up
                             </a>

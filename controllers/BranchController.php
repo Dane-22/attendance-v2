@@ -32,10 +32,10 @@ class BranchController extends Controller {
 
             if ($this->branchModel->create($data)) {
                 $_SESSION['success'] = 'Branch created successfully';
-                $this->redirect('/jajr-v2/branches');
+                $this->redirect('/branches');
             } else {
                 $_SESSION['error'] = 'Failed to create branch';
-                $this->redirect('/jajr-v2/branches');
+                $this->redirect('/branches');
             }
         }
         
@@ -56,10 +56,10 @@ class BranchController extends Controller {
 
             if ($this->branchModel->update($id, $data)) {
                 $_SESSION['success'] = 'Branch updated successfully';
-                $this->redirect('/jajr-v2/branches');
+                $this->redirect('/branches');
             } else {
                 $_SESSION['error'] = 'Failed to update branch';
-                $this->redirect('/jajr-v2/branches/edit/' . $id);
+                $this->redirect('/branches/edit/' . $id);
             }
         }
 
@@ -67,7 +67,7 @@ class BranchController extends Controller {
         
         if (!$branch) {
             $_SESSION['error'] = 'Branch not found';
-            $this->redirect('/jajr-v2/branches');
+            $this->redirect('/branches');
         }
         
         $this->view('branch/edit', [
@@ -82,6 +82,6 @@ class BranchController extends Controller {
         } else {
             $_SESSION['error'] = 'Failed to delete branch';
         }
-        $this->redirect('/jajr-v2/branches');
+        $this->redirect('/branches');
     }
 }

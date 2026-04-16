@@ -70,10 +70,10 @@ class EmployeeController extends Controller {
 
             if ($this->employeeModel->create($data)) {
                 $_SESSION['success'] = 'Employee created successfully';
-                $this->redirect('/jajr-v2/employee');
+                $this->redirect('/employee');
             } else {
                 $_SESSION['error'] = 'Failed to create employee';
-                $this->redirect('/jajr-v2/employee');
+                $this->redirect('/employee');
             }
         }
         
@@ -87,7 +87,7 @@ class EmployeeController extends Controller {
         
         if (!$employee) {
             $_SESSION['error'] = 'Employee not found';
-            $this->redirect('/jajr-v2/employee');
+            $this->redirect('/employee');
         }
         
         $this->view('employee/view', [
@@ -127,10 +127,10 @@ class EmployeeController extends Controller {
 
             if ($this->employeeModel->update($id, $data)) {
                 $_SESSION['success'] = 'Employee updated successfully';
-                $this->redirect('/jajr-v2/employee');
+                $this->redirect('/employee');
             } else {
                 $_SESSION['error'] = 'Failed to update employee';
-                $this->redirect('/jajr-v2/employee/edit/' . $id);
+                $this->redirect('/employee/edit/' . $id);
             }
         }
 
@@ -138,7 +138,7 @@ class EmployeeController extends Controller {
         
         if (!$employee) {
             $_SESSION['error'] = 'Employee not found';
-            $this->redirect('/jajr-v2/employee');
+            $this->redirect('/employee');
         }
         
         $this->view('employee/edit', [
@@ -153,7 +153,7 @@ class EmployeeController extends Controller {
         } else {
             $_SESSION['error'] = 'Failed to delete employee';
         }
-        $this->redirect('/jajr-v2/employee');
+        $this->redirect('/employee');
     }
 
     public function getNextCode() {

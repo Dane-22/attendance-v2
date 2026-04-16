@@ -196,6 +196,6 @@ class BranchQRController extends Controller {
 
     public function logout() {
         session_destroy();
-        $this->redirect('/jajr-v2/');
+        $this->redirect('/');
     }
 }
