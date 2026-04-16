@@ -30,6 +30,13 @@ $router->add('attendance/by-employee/{id}', ['controller' => 'AttendanceControll
 $router->add('attendance/quick-mark', ['controller' => 'AttendanceController', 'action' => 'quickMark']);
 $router->add('attendance-audit', ['controller' => 'AttendanceController', 'action' => 'audit']);
 
+// Attendance AJAX API routes
+$router->add('api/attendance/employees', ['controller' => 'AttendanceController', 'action' => 'getEmployeesByBranch']);
+$router->add('api/attendance/mark', ['controller' => 'AttendanceController', 'action' => 'markAttendance']);
+$router->add('api/attendance/stats', ['controller' => 'AttendanceController', 'action' => 'getTodayStats']);
+$router->add('api/attendance/employee-calendar', ['controller' => 'AttendanceController', 'action' => 'getEmployeeCalendar']);
+$router->add('api/attendance/branch-calendar', ['controller' => 'AttendanceController', 'action' => 'getBranchCalendar']);
+
 // Activity routes
 $router->add('activity-logs', ['controller' => 'ActivityController', 'action' => 'logs']);
 

@@ -29,16 +29,27 @@ class Attendance extends Model {
         return $stmt->fetchAll();
     }
 
-    public function getByDateRange($startDate, $endDate) {
-        $query = 'SELECT a.*, e.first_name, e.last_name, e.employee_code, e.department, b.branch_name 
+    public function getByDateRange($startDate, $endDate, $employeeCode = null) {
+        $query = 'SELECT a.*, e.first_name, e.last_name, e.employee_code, e.department, e.position, b.branch_name 
                   FROM ' . $this->table . ' a 
                   JOIN employees e ON a.employee_id = e.id 
                   LEFT JOIN branches b ON a.branch_code = b.branch_code 
-                  WHERE a.date BETWEEN :start_date AND :end_date 
-                  ORDER BY a.date DESC, e.last_name ASC';
+                  WHERE a.date BETWEEN :start_date AND :end_date';
+        
+        if ($employeeCode) {
+            $query .= ' AND e.employee_code = :employee_code';
+        }
+        
+        $query .= ' ORDER BY a.date DESC, e.last_name ASC';
+        
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':start_date', $startDate);
         $stmt->bindParam(':end_date', $endDate);
+        
+        if ($employeeCode) {
+            $stmt->bindParam(':employee_code', $employeeCode);
+        }
+        
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -162,6 +173,80 @@ class Attendance extends Model {
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':month', $month);
         $stmt->bindParam(':year', $year);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    public function getDailyStatsForMonth($month, $year) {
+        $query = 'SELECT DAY(date) as day, COUNT(*) as count 
+                  FROM ' . $this->table . ' 
+                  WHERE MONTH(date) = :month AND YEAR(date) = :year 
+                  GROUP BY DAY(date)';
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':month', $month);
+        $stmt->bindParam(':year', $year);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    public function getMonthlyStats($month, $year) {
+        $query = 'SELECT 
+                    COUNT(*) as total_records,
+                    COUNT(CASE WHEN status = "present" AND check_out IS NULL THEN 1 END) as currently_present,
+                    COUNT(CASE WHEN status = "present" AND check_out IS NOT NULL THEN 1 END) as completed_shifts,
+                    COUNT(CASE WHEN status = "absent" THEN 1 END) as absent_count
+                  FROM ' . $this->table . ' 
+                  WHERE MONTH(date) = :month AND YEAR(date) = :year';
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':month', $month);
+        $stmt->bindParam(':year', $year);
+        $stmt->execute();
+        return $stmt->fetch();
+    }
+
+    public function getByBranchAndDateRange($branchName, $startDate, $endDate) {
+        $query = 'SELECT a.*, e.first_name, e.last_name, e.employee_code, e.department, e.position, b.branch_name 
+                  FROM ' . $this->table . ' a 
+                  JOIN employees e ON a.employee_id = e.id 
+                  LEFT JOIN branches b ON a.branch_code = b.branch_code 
+                  WHERE b.branch_name = :branch_name 
+                    AND a.date BETWEEN :start_date AND :end_date 
+                  ORDER BY a.date ASC, e.last_name ASC';
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':branch_name', $branchName);
+        $stmt->bindParam(':start_date', $startDate);
+        $stmt->bindParam(':end_date', $endDate);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    public function getByDateAndBranch($date, $branchName) {
+        $query = 'SELECT a.*, e.first_name, e.last_name, e.employee_code, e.department, e.position, b.branch_name 
+                  FROM ' . $this->table . ' a 
+                  JOIN employees e ON a.employee_id = e.id 
+                  LEFT JOIN branches b ON a.branch_code = b.branch_code 
+                  WHERE a.date = :date 
+                    AND b.branch_name = :branch_name 
+                  ORDER BY e.last_name ASC';
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':date', $date);
+        $stmt->bindParam(':branch_name', $branchName);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    public function getDailyStatsForMonthByBranch($month, $year, $branchName) {
+        $query = 'SELECT DAY(a.date) as day, COUNT(*) as count 
+                  FROM ' . $this->table . ' a 
+                  JOIN branches b ON a.branch_code = b.branch_code 
+                  WHERE MONTH(a.date) = :month 
+                    AND YEAR(a.date) = :year 
+                    AND b.branch_name = :branch_name 
+                  GROUP BY DAY(a.date)';
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':month', $month);
+        $stmt->bindParam(':year', $year);
+        $stmt->bindParam(':branch_name', $branchName);
         $stmt->execute();
         return $stmt->fetchAll();
     }
