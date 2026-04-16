@@ -2,8 +2,8 @@
 // Database connection for JAJR Attendance System
 $host = 'localhost';
 $dbname = 'attendance-system';
-$username = 'root';
-$password = '';
+$username = 'attendance_user';
+$password = 'JaJr12390786@';
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);

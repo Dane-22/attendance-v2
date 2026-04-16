@@ -4,5 +4,5 @@ return [
     'host' => 'localhost',
     'database' => 'attendance-system',
     'username' => 'attendance_user',
-    'password' => 'SecurePass123!'
+    'password' => 'JaJr12390786@'
 ];
