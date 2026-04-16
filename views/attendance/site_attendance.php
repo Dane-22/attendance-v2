@@ -618,6 +618,7 @@ let currentBranchCode = null;
 let currentEmployees = [];
 let currentFilter = 'all';
 const basePath = window.location.origin;
+const jwtToken = <?= json_encode($_SESSION['jwt_token'] ?? null) ?>;
 
 function selectProject(element, branchCode) {
     // Update UI
@@ -639,7 +640,9 @@ function loadEmployees() {
     
     container.innerHTML = '<div class="employee-placeholder"><div class="loading-spinner"></div><p>Loading employees...</p></div>';
     
-    fetch(`${basePath}/api/attendance/employees?branch_code=${currentBranchCode}&date=${date}`)
+    fetch(`${basePath}/api/attendance/employees?branch_code=${currentBranchCode}&date=${date}`, {
+        headers: jwtToken ? { 'Authorization': `Bearer ${jwtToken}` } : {}
+    })
         .then(response => response.json())
         .then(data => {
             currentEmployees = data.employees || [];
@@ -737,8 +740,9 @@ function renderEmployees() {
                 <td class="time-cell">${checkOutTime}</td>
                 <td class="hours-cell">${totalHours}</td>
                 <td class="actions-cell">
-                    ${!emp.check_in ? 
-                        `<button class="btn-pill btn-timein" onclick="markAttendance(${emp.id}, 'present')">Time In</button>` :
+                    ${!emp.check_in && !emp.check_out ?
+                        `<button class="btn-pill btn-absent" onclick="markAttendance(${emp.id}, 'absent')">Mark Absent</button>
+                         <button class="btn-pill btn-timein" onclick="markAttendance(${emp.id}, 'present')">Time In</button>` :
                         !emp.check_out ?
                             `<button class="btn-pill btn-checkout" onclick="checkoutEmployee(${emp.id})">Time Out</button>` :
                             `<button class="btn-pill btn-timein" onclick="markAttendance(${emp.id}, 'present')">Time In</button>`
@@ -811,7 +815,10 @@ function markAttendance(employeeId, status, isUndo = false) {
 
     fetch(`${basePath}/api/attendance/mark`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            ...(jwtToken ? { 'Authorization': `Bearer ${jwtToken}` } : {})
+        },
         body: JSON.stringify({
             employee_id: employeeId,
             status: status,
@@ -845,7 +852,9 @@ function checkoutEmployee(employeeId) {
 function updateStats() {
     const date = document.getElementById('attendanceDate').value;
     
-    fetch(`${basePath}/api/attendance/stats?date=${date}`)
+    fetch(`${basePath}/api/attendance/stats?date=${date}`, {
+        headers: jwtToken ? { 'Authorization': `Bearer ${jwtToken}` } : {}
+    })
         .then(response => response.json())
         .then(data => {
             document.getElementById('statTotal').textContent = data.totalWorkers;
