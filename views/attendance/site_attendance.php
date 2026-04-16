@@ -799,7 +799,7 @@ function searchEmployees() {
 
 function markAttendance(employeeId, status, isUndo = false) {
     const date = document.getElementById('attendanceDate').value;
-    
+
     // Find current employee status for undo tracking
     const emp = currentEmployees.find(e => e.id == employeeId);
     if (emp && !isUndo) {
@@ -808,7 +808,9 @@ function markAttendance(employeeId, status, isUndo = false) {
             previousStatus: emp.attendance_status
         };
     }
-    
+
+    console.log('Marking attendance:', { employeeId, status, branch_code: currentBranchCode, date, emp });
+
     fetch(`${basePath}/api/attendance/mark`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -819,8 +821,12 @@ function markAttendance(employeeId, status, isUndo = false) {
             date: date
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
     .then(data => {
+        console.log('Response data:', data);
         if (data.success) {
             loadEmployees();
         } else {
@@ -828,6 +834,7 @@ function markAttendance(employeeId, status, isUndo = false) {
         }
     })
     .catch(error => {
+        console.error('Fetch error:', error);
         alert('Error: ' + error.message);
     });
 }
