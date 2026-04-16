@@ -467,6 +467,130 @@ server {
 
 ---
 
+## Employee Database Import & TablePlus Setup (April 16, 2026 - Part 3)
+
+### Summary
+Successfully imported 86 employees from source SQL file and configured employee codes for all Worker positions with standardized W#### format.
+
+### Files Created
+- `database/migrations/import_employees.sql` - Migration script for employee import
+
+### Database Schema Extension
+**Added columns to `employees` table:**
+- `middle_name` VARCHAR(100) - Employee middle name
+- `status` VARCHAR(50) - Active/Inactive status
+- `profile_image` VARCHAR(255) - Profile photo path
+- `daily_rate` DECIMAL(10,2) - Salary computation
+- `performance_allowance` DECIMAL(10,2) - Additional compensation
+- `has_deduction` TINYINT(1) - Deduction flag
+- `branch_id` INT(11) - Branch assignment
+
+**Extended column lengths:**
+- `employee_code` VARCHAR(50)
+- `first_name` VARCHAR(100)
+- `last_name` VARCHAR(100)
+
+### Data Import Details
+
+**Source:** `employees.sql` (86 employee records)
+
+**Field Mapping:**
+| Source Field | Target Field | Notes |
+|--------------|--------------|-------|
+| employee_code | employee_code | Imported as-is |
+| first_name | first_name | Direct copy |
+| middle_name | middle_name | NULL if empty |
+| last_name | last_name | Direct copy |
+| email | email | Direct copy |
+| position | position | Direct copy |
+| status | status | Active/Inactive |
+| profile_image | profile_image | Path preserved |
+| daily_rate | daily_rate | Decimal value |
+| performance_allowance | performance_allowance | Decimal value |
+| has_deduction | has_deduction | 0 or 1 |
+| branch_id | branch_id | Foreign key |
+| N/A | department | Derived from position |
+
+**Department Derivation Logic:**
+- Worker → Operations
+- Engineer → Engineering
+- Admin → Administration
+- Developer → IT
+- Super Admin → Administration
+
+### Employee Code Standardization
+
+**Worker Position Update:**
+- All 87 Worker positions updated to W#### format
+- Sequential numbering: W0001, W0002, W0003... W0087
+- Used ROW_NUMBER() window function for reliable sequential assignment
+
+**Other Positions:**
+- Engineers: ENG-2026-#### (7 employees)
+- Admins: ADMIN-2026-#### (5 employees)
+- Developers: IT-2026-## (2 employees)
+- Super Admin: SA001 (1 employee)
+
+### TablePlus Connection Setup
+
+**Connection Details:**
+```
+Host: 127.0.0.1
+Port: 3306
+User: attendance_user
+Password: JaJr12390786@
+Database: attendance-system
+```
+
+**Features Enabled:**
+- Visual data browsing and editing
+- SQL query execution
+- Schema modification capabilities
+- Import/export functionality
+
+### SQL Queries Used
+
+**Column Extension:**
+```sql
+ALTER TABLE employees 
+  MODIFY employee_code VARCHAR(50),
+  MODIFY first_name VARCHAR(100),
+  MODIFY last_name VARCHAR(100),
+  MODIFY email VARCHAR(100);
+
+ALTER TABLE employees ADD COLUMN middle_name VARCHAR(100) NULL AFTER last_name;
+ALTER TABLE employees ADD COLUMN status VARCHAR(50) DEFAULT 'Active' AFTER position;
+ALTER TABLE employees ADD COLUMN profile_image VARCHAR(255) NULL;
+ALTER TABLE employees ADD COLUMN daily_rate DECIMAL(10,2) DEFAULT 600.00;
+ALTER TABLE employees ADD COLUMN performance_allowance DECIMAL(10,2) DEFAULT 0.00;
+ALTER TABLE employees ADD COLUMN has_deduction TINYINT(1) DEFAULT 1;
+ALTER TABLE employees ADD COLUMN branch_id INT(11) NULL;
+```
+
+**Worker Code Update:**
+```sql
+UPDATE employees e1
+JOIN (
+    SELECT id, ROW_NUMBER() OVER (ORDER BY id) as row_num
+    FROM employees
+    WHERE position = 'Worker'
+) e2 ON e1.id = e2.id
+SET e1.employee_code = CONCAT('W', LPAD(e2.row_num, 4, '0'))
+WHERE e1.position = 'Worker';
+```
+
+### Current Employee Count
+| Position | Count |
+|----------|-------|
+| Worker | 87 |
+| Engineer | 7 |
+| Admin | 5 |
+| Developer | 2 |
+| Super Admin | 1 |
+| **Total** | **102** |
+
+---
+
 ## Next Steps (Future Enhancements)
 
 - [ ] Add offline sync with IndexedDB
@@ -475,6 +599,69 @@ server {
 - [ ] Create attendance reports by branch
 - [ ] Add branch-wise employee assignment
 - [ ] Implement shift management per branch
+
+---
+
+## Attendance Interface Enhancement & JWT Authentication Fix (April 16, 2026)
+
+### Summary
+Enhanced the attendance interface at `/attendance` with improved button logic and fixed JWT authentication issues causing 401 Unauthorized errors.
+
+### Attendance Button Logic Update
+**File:** `views/attendance/site_attendance.php`
+
+**Changes:**
+- **No attendance record** → Show "Mark Absent" (red) + "Time In" (green)
+- **Checked in only** → Show "Time Out" button only
+- **Checked out** → Show "Time In" button only (allows new check-in)
+
+**Implementation:**
+```javascript
+${!emp.check_in && !emp.check_out ?
+    `<button class="btn-pill btn-absent" onclick="markAttendance(${emp.id}, 'absent')">Mark Absent</button>
+     <button class="btn-pill btn-timein" onclick="markAttendance(${emp.id}, 'present')">Time In</button>` :
+    !emp.check_out ?
+        `<button class="btn-pill btn-checkout" onclick="checkoutEmployee(${emp.id})">Time Out</button>` :
+        `<button class="btn-pill btn-timein" onclick="markAttendance(${emp.id}, 'present')">Time In</button>`
+}
+```
+
+### JWT Authentication Fix
+
+**Issue:** API calls returning 401 (Unauthorized)
+- `GET /api/attendance/employees` 
+- `GET /api/attendance/stats`
+- `POST /api/attendance/mark`
+
+**Root Cause:** API endpoints require JWT token in Authorization header, but frontend was not passing it.
+
+**Solution:**
+1. Exposed JWT token from PHP session to JavaScript:
+```php
+const jwtToken = <?= json_encode($_SESSION['jwt_token'] ?? null) ?>;
+```
+
+2. Added Authorization header to all API fetch calls:
+```javascript
+fetch(`${basePath}/api/attendance/employees?branch_code=${code}&date=${date}`, {
+    headers: jwtToken ? { 'Authorization': `Bearer ${jwtToken}` } : {}
+})
+```
+
+### Files Modified
+- `views/attendance/site_attendance.php` - Button logic, JWT auth headers, debug logging
+- `controllers/AttendanceController.php` - API endpoints (already JWT-enabled)
+
+### Debugging
+Added console logging to verify JWT token availability:
+```javascript
+console.log('JWT Token available:', !!jwtToken, 'Token preview:', jwtToken ? jwtToken.substring(0, 20) + '...' : 'none');
+```
+
+### Notes
+- JWT token is set in `$_SESSION['jwt_token']` during login via `LoginController`
+- User must be logged in at the same domain/IP for session to work
+- If accessing via IP address after logging in via domain, session won't transfer
 
 ---
 

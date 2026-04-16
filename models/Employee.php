@@ -20,17 +20,17 @@ class Employee extends Model {
     }
 
     public function create($data) {
-        $fields = ['employee_code', 'first_name', 'middle_name', 'last_name', 'email', 'department', 'position', 'status', 'daily_rate', 'has_deductions'];
+        $fields = ['employee_code', 'first_name', 'middle_name', 'last_name', 'email', 'department', 'position', 'status', 'daily_rate', 'has_deduction'];
         $placeholders = [];
         $values = [];
-        
+
         foreach ($fields as $field) {
             if (isset($data[$field])) {
                 $placeholders[] = ':' . $field;
                 $values[$field] = $data[$field];
             }
         }
-        
+
         if (isset($data['profile_image'])) {
             $placeholders[] = ':profile_image';
             $values['profile_image'] = $data['profile_image'];
@@ -48,22 +48,41 @@ class Employee extends Model {
     }
 
     public function update($id, $data) {
-        $query = 'UPDATE ' . $this->table . ' SET 
-                  employee_code = :employee_code, 
-                  first_name = :first_name, 
-                  last_name = :last_name, 
-                  email = :email, 
-                  department = :department, 
-                  position = :position 
-                  WHERE id = :id';
+        $query = 'UPDATE ' . $this->table . ' SET
+                  employee_code = :employee_code,
+                  first_name = :first_name,
+                  middle_name = :middle_name,
+                  last_name = :last_name,
+                  email = :email,
+                  department = :department,
+                  position = :position,
+                  status = :status,
+                  daily_rate = :daily_rate,
+                  has_deduction = :has_deduction';
+
+        if (isset($data['profile_image'])) {
+            $query .= ', profile_image = :profile_image';
+        }
+
+        $query .= ' WHERE id = :id';
+
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':id', $id);
         $stmt->bindParam(':employee_code', $data['employee_code']);
         $stmt->bindParam(':first_name', $data['first_name']);
+        $stmt->bindParam(':middle_name', $data['middle_name'] ?? null);
         $stmt->bindParam(':last_name', $data['last_name']);
         $stmt->bindParam(':email', $data['email']);
         $stmt->bindParam(':department', $data['department']);
         $stmt->bindParam(':position', $data['position']);
+        $stmt->bindParam(':status', $data['status'] ?? 'Active');
+        $stmt->bindParam(':daily_rate', $data['daily_rate'] ?? 0);
+        $stmt->bindParam(':has_deduction', $data['has_deduction'] ?? 1);
+
+        if (isset($data['profile_image'])) {
+            $stmt->bindParam(':profile_image', $data['profile_image']);
+        }
+
         return $stmt->execute();
     }
 

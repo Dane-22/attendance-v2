@@ -50,7 +50,7 @@ class EmployeeController extends Controller {
                 'position' => $position,
                 'status' => $_POST['status'] ?: 'Active',
                 'daily_rate' => $_POST['daily_rate'] ?: 0,
-                'has_deductions' => isset($_POST['has_deductions']) ? 1 : 0
+                'has_deduction' => isset($_POST['has_deduction']) ? 1 : 0
             ];
 
             // Handle profile image upload
@@ -107,7 +107,7 @@ class EmployeeController extends Controller {
                 'position' => $_POST['position'] ?: null,
                 'status' => $_POST['status'] ?: 'Active',
                 'daily_rate' => $_POST['daily_rate'] ?: 0,
-                'has_deductions' => isset($_POST['has_deductions']) ? 1 : 0
+                'has_deduction' => isset($_POST['has_deduction']) ? 1 : 0
             ];
 
             // Handle profile image upload

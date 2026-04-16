@@ -388,9 +388,9 @@ function getAvatarInitials($emp) {
         <div class="employee-code"><?= htmlspecialchars($employee['employee_code']) ?></div>
         <div class="employee-position"><?= htmlspecialchars($employee['position']) ?></div>
         <div class="employee-status"><?= htmlspecialchars($employee['status']) ?></div>
-        <div class="deduction-badge <?= !empty($employee['has_deductions']) ? 'with' : 'without' ?>">
-            <i class="fas fa-<?= !empty($employee['has_deductions']) ? 'check' : 'times' ?>-circle"></i>
-            <?= !empty($employee['has_deductions']) ? 'With Deductions' : 'No Deductions' ?>
+        <div class="deduction-badge <?= !empty($employee['has_deduction']) ? 'with' : 'without' ?>">
+            <i class="fas fa-<?= !empty($employee['has_deduction']) ? 'check' : 'times' ?>-circle"></i>
+            <?= !empty($employee['has_deduction']) ? 'With Deductions' : 'No Deductions' ?>
         </div>
         <div class="employee-actions">
             <button class="action-btn" title="View Details" onclick="viewEmployee(<?= $employee['id'] ?>)"><i class="fas fa-th-large"></i></button>
@@ -473,7 +473,7 @@ function getAvatarInitials($emp) {
                         <label>Government Deductions</label>
                         <div class="toggle-container">
                             <label class="toggle-switch">
-                                <input type="checkbox" name="has_deductions" checked>
+                                <input type="checkbox" name="has_deduction" checked>
                                 <span class="toggle-slider"></span>
                             </label>
                             <span class="toggle-label">With SSS/PhilHealth/PagIBIG</span>
@@ -585,7 +585,7 @@ function getAvatarInitials($emp) {
                         <label>Government Deductions</label>
                         <div class="toggle-container">
                             <label class="toggle-switch">
-                                <input type="checkbox" id="edit_has_deductions" name="has_deductions">
+                                <input type="checkbox" id="edit_has_deduction" name="has_deduction">
                                 <span class="toggle-slider"></span>
                             </label>
                             <span class="toggle-label">With SSS/PhilHealth/PagIBIG</span>
@@ -1080,7 +1080,7 @@ function getAvatarInitials($emp) {
             document.getElementById('edit_position').value = employee.position;
             document.getElementById('edit_status').value = employee.status || 'Active';
             document.getElementById('edit_daily_rate').value = employee.daily_rate || '';
-            document.getElementById('edit_has_deductions').checked = employee.has_deductions == 1;
+            document.getElementById('edit_has_deduction').checked = employee.has_deduction == 1;
             
             // Set profile image
             const previewImg = document.getElementById('editPreviewImg');
