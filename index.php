@@ -58,6 +58,20 @@ if (!empty($_SESSION['employee_id'])) {
         </div>
     </nav>
 
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="fixed inset-0 z-40 hidden md:hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeMobileMenu()"></div>
+        <div class="absolute top-16 left-0 right-0 bg-gray-900 border-t border-gray-800 p-6">
+            <div class="flex flex-col gap-4">
+                <a href="#features" class="text-white text-lg font-medium py-2 hover:text-orange-500 transition" onclick="closeMobileMenu()">Features</a>
+                <a href="#solutions" class="text-white text-lg font-medium py-2 hover:text-orange-500 transition" onclick="closeMobileMenu()">Solutions</a>
+                <a href="#pricing" class="text-white text-lg font-medium py-2 hover:text-orange-500 transition" onclick="closeMobileMenu()">Pricing</a>
+                <a href="/jajr-v2/login" class="text-white text-lg font-medium py-2 hover:text-orange-500 transition">Log In</a>
+                <a href="signup.php" class="btn-orange-primary text-center mt-2">Get Started</a>
+            </div>
+        </div>
+    </div>
+
     <!-- Hero Section -->
     <section class="hero-attendance">
         <!-- Background -->
@@ -1035,6 +1049,26 @@ if (!empty($_SESSION['employee_id'])) {
     </footer>
 
     <script>
+        // Mobile Menu Functions
+        function openMobileMenu() {
+            document.getElementById('mobileMenu').classList.remove('hidden');
+        }
+
+        function closeMobileMenu() {
+            document.getElementById('mobileMenu').classList.add('hidden');
+        }
+
+        // Mobile menu button click handler
+        document.getElementById('mobileMenuBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            const menu = document.getElementById('mobileMenu');
+            if (menu.classList.contains('hidden')) {
+                openMobileMenu();
+            } else {
+                closeMobileMenu();
+            }
+        });
+
         // Demo Modal Functions
         function openDemoModal() {
             document.getElementById('demoModal').classList.remove('hidden');
