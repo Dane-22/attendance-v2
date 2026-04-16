@@ -35,6 +35,9 @@ class BranchQRController extends Controller {
     }
 
     public function processScan() {
+        // Require API token for this endpoint
+        $this->requireApiToken();
+
         // Check if branch device is logged in
         if (empty($_SESSION['branch_code'])) {
             header('Content-Type: application/json');

@@ -335,7 +335,9 @@ ob_start();
 
 <script>
     // Force HTTPS - camera requires secure context
-    if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    // Skip redirect for IP addresses (for testing before DNS propagates)
+    const isIPAddress = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(window.location.hostname);
+    if (window.location.protocol === 'http:' && !isIPAddress && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
         window.location.href = window.location.href.replace('http:', 'https:');
     }
 

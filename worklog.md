@@ -211,6 +211,262 @@ JAJR-EMP:1|JAJR-001|John Doe
 
 ---
 
+## Docker & Deployment (April 16, 2026)
+
+### Docker Setup for Local Development
+
+**Files Created:**
+- `Dockerfile` - PHP 8.2 Apache with required extensions
+- `docker-compose.yml` - App, MySQL 8.0, phpMyAdmin services
+- `.dockerignore` - Excludes local files from image
+- `env.docker` - Environment variables template
+- `docker/apache/000-default.conf` - Apache mod_rewrite config
+- `docker/php/php.ini` - PHP configuration
+- `DOCKER_README.md` - Local development setup instructions
+
+**Database Connection Updated:**
+- `conn/db_connection.php` - Uses `getenv()` with fallbacks
+- `config/database.php` - Environment-based configuration
+
+### Production Deployment
+
+**Server Details:**
+- IP: `72.62.254.60`
+- Domain: `attendance.xandree.com`
+- SSL: Let's Encrypt certificate
+- Web Server: Nginx → PHP-FPM
+
+**Deployment Steps:**
+```bash
+git push origin main  # Local
+git pull origin main  # Server (72.62.254.60)
+```
+
+### DNS Configuration
+
+**Hostinger DNS Records:**
+- Type: A Record
+- Name: `attendance.xandree.com`
+- Points to: `72.62.254.60`
+- TTL: 14400 seconds (4 hours)
+
+**Propagation Status:**
+- Server (localhost): ✅ Resolves immediately
+- Global DNS (8.8.8.8, 1.1.1.1): ⏳ Waiting for propagation
+- Full propagation: 4-48 hours
+
+### QR Scanner HTTPS Fix
+
+**Issue:** QR scanner showed "network error check connection" when accessing via IP
+
+**Root Cause:** HTTPS redirect blocked HTTP access on IP addresses during DNS propagation
+
+**Fix Applied:** `views/branch_qr/scanner.php`
+- Modified HTTPS redirect to allow IP-based HTTP access
+- Added regex check: `/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/`
+- Scanner now works at `http://72.62.254.60/branch/scanner`
+
+**Working URLs:**
+| URL | Status |
+|-----|--------|
+| `https://attendance.xandree.com` | ✅ (after DNS) |
+| `http://72.62.254.60` | ✅ QR scanner accessible |
+| API `/branch/scan` | ✅ Responding correctly |
+
+---
+
+## Dashboard Redesign & Enhancement (In Progress - April 16, 2026)
+
+### Overview
+Redesigning the admin dashboard at `/jajr-v2/dashboard` with a modern dark theme, analytics charts, and improved data visualization.
+
+### Features Being Implemented
+
+#### 1. DashboardController Updates (`controllers/DashboardController.php`)
+- Added `getSevenDayTrend()` - 7-day attendance trend data
+- Added `getBranchAttendanceStats()` - Branch-wise attendance counts
+- Added `getPositionDistribution()` - Employee distribution by position
+- Added `getRecentTransfers()` - Recent employee transfer records
+- Added `getSystemActivity()` - System activity log feed
+
+#### 2. Model Updates (`models/Attendance.php`)
+- Added `countByBranchAndDate()` - Count attendance records by branch and date
+
+#### 3. New Dashboard Features
+- **Dark Theme UI** - Modern dark color scheme with accent colors
+- **Analytics Cards** - Total Employees, Active Branches, Attendance Rate, Today's Status
+- **7-Day Attendance Chart** - Trend visualization for present/late/absent
+- **Overtime Chart** - Bar chart for overtime hours by day
+- **Branch Attendance Chart** - Bar chart showing attendance per branch
+- **Employee Distribution** - Pie/donut chart by position
+- **Quick Action Command Center** - Action buttons for common tasks
+- **Recent Transfers Section** - Employee transfer history
+- **System Activity Feed** - Real-time activity log
+
+### Files Being Modified
+- `controllers/DashboardController.php` - New stats methods
+- `models/Attendance.php` - `countByBranchAndDate()` method
+- `views/dashboard/index.php` - Complete redesign with charts
+
+---
+
+## Bug Fixes (April 16, 2026 - Part 2)
+
+### QR Scanner Camera Access Fix
+
+**Issue:** `https://attendance.xandree.com/branch/scanner` showed "Camera access denied" even with permissions granted
+
+**Root Cause:**
+- Page served behind proxy was detecting HTTP instead of HTTPS
+- `navigator.mediaDevices` was undefined (requires secure context)
+- Mobile browsers have strict camera constraints
+
+**Fix Applied:** `views/branch_qr/scanner.php`
+1. Added HTTPS redirect at page load for non-localhost
+2. Improved camera initialization with fallback constraints (environment camera → any camera)
+3. Added detailed error diagnostics showing specific error names
+
+### Attendance Page "Failed to fetch" Fix
+
+**Issue:** `https://attendance.xandree.com/attendance` showed "Error loading employees: Failed to fetch"
+
+**Root Cause:**
+- Page loaded via HTTPS but API calls used relative paths resolving to HTTP
+- Mixed content blocked by browser security
+
+**Fix Applied:** `views/attendance/site_attendance.php`
+1. Added HTTPS redirect check at script start
+2. Changed `basePath` from relative PHP path to `window.location.origin`
+
+### Time Out Action Debugging
+
+**Issue:** "Time Out" button on attendance page not working
+
+**Investigation:** Added console logging to `markAttendance()` function to diagnose the issue
+
+---
+
+## Hostinger VPS Deployment (April 16, 2026)
+
+### Deployment Summary
+Successfully deployed JAJR Attendance System to Hostinger VPS using Git repository workflow.
+
+### Server Configuration
+- **VPS Provider:** Hostinger
+- **IP Address:** `72.62.254.60`
+- **OS:** Ubuntu 24.04.4 LTS
+- **Web Server:** Nginx (port 80)
+- **PHP:** PHP 8.3-FPM
+- **Database:** MariaDB 10.11.14
+- **Deployment Path:** `/var/www/html/attendance`
+
+### Deployment Steps Completed
+
+#### 1. Server Setup
+```bash
+# Update system and install dependencies
+apt-get update
+apt-get install -y git nginx php8.3 php8.3-fpm php8.3-mysql mariadb-server mariadb-client
+
+# Start and enable services
+systemctl start nginx php8.3-fpm mariadb
+systemctl enable nginx php8.3-fpm mariadb
+```
+
+#### 2. Git Repository Deployment
+```bash
+cd /var/www/html
+git clone https://github.com/Dane-22/attendance-v2.git attendance
+cd attendance
+git pull origin main  # For future updates
+```
+
+#### 3. Database Setup
+- Created database: `attendance_v2`
+- Created user: `jajr_user` with password `SecurePass123!`
+- Imported schema from `attendance-system.sql`
+- Granted all privileges on `attendance_v2.*`
+
+#### 4. Database Configuration Updates
+
+**`config/database.php`:**
+```php
+<?php
+return [
+    'host' => 'localhost',
+    'database' => 'attendance_v2',
+    'username' => 'jajr_user',
+    'password' => 'SecurePass123!',
+    'charset' => 'utf8mb4',
+    'collation' => 'utf8mb4_unicode_ci'
+];
+```
+
+**`conn/db_connection.php`:**
+```php
+<?php
+$host = 'localhost';
+$dbname = 'attendance_v2';
+$username = 'jajr_user';
+$password = 'SecurePass123!';
+// ... PDO and mysqli connections
+```
+
+#### 5. Nginx Configuration
+```nginx
+server {
+    listen 80;
+    server_name 72.62.254.60;
+    root /var/www/html/attendance;
+    index index.php app.php;
+
+    # Redirect /jajr-v2/ paths to root
+    location ~ ^/jajr-v2/(.*)$ {
+        return 301 /$1;
+    }
+
+    location / {
+        try_files $uri $uri/ /app.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+```
+
+### Database Tables
+| Table | Description |
+|-------|-------------|
+| `admins` | Admin and branch device accounts |
+| `attendance` | Attendance records with branch_code |
+| `branch_users` | Branch user mappings |
+| `branches` | Branch locations (A-F) |
+| `employees` | Employee records with QR codes |
+
+### Working URLs
+| Endpoint | URL | Status |
+|----------|-----|--------|
+| Homepage | `http://72.62.254.60` | Live |
+| Login | `http://72.62.254.60/login` | Working |
+| QR Scanner | `http://72.62.254.60/branch/scanner` | Accessible |
+| Admin Dashboard | `http://72.62.254.60/dashboard` | Functional |
+
+### Future Domain Setup (Planned)
+- Configure custom domain (TBD)
+- Install SSL certificate (Let's Encrypt)
+- Update Nginx server_name directive
+- Configure DNS A record to 72.62.254.60
+
+---
+
 ## Next Steps (Future Enhancements)
 
 - [ ] Add offline sync with IndexedDB

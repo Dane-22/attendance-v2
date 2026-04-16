@@ -157,6 +157,8 @@ class EmployeeController extends Controller {
     }
 
     public function getNextCode() {
+        $this->requireApiToken();
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $position = $_POST['position'] ?? '';
             if ($position) {
@@ -169,6 +171,8 @@ class EmployeeController extends Controller {
     }
 
     public function getEmployee($id) {
+        $this->requireApiToken();
+
         header('Content-Type: application/json');
         $employee = $this->employeeModel->findById($id);
         

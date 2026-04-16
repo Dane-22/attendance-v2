@@ -37,6 +37,8 @@ class AttendanceController extends Controller {
     }
 
     public function getEmployeesByBranch() {
+        $this->requireApiToken();
+
         if (!isset($_GET['branch_code'])) {
             $this->jsonResponse(['error' => 'Branch code required'], 400);
         }
@@ -66,6 +68,8 @@ class AttendanceController extends Controller {
     }
 
     public function markAttendance() {
+        $this->requireApiToken();
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->jsonResponse(['error' => 'POST required'], 405);
         }
@@ -119,6 +123,8 @@ class AttendanceController extends Controller {
     }
 
     public function getTodayStats() {
+        $this->requireApiToken();
+
         $date = $_GET['date'] ?? date('Y-m-d');
         $attendance = $this->attendanceModel->getByDate($date);
         $totalWorkers = $this->employeeModel->countAll();
@@ -445,6 +451,8 @@ class AttendanceController extends Controller {
     }
 
     public function getEmployeeCalendar() {
+        $this->requireApiToken();
+
         $employeeCode = $_GET['employee_code'] ?? '';
         $year = intval($_GET['year'] ?? date('Y'));
         $month = intval($_GET['month'] ?? date('n'));
@@ -476,6 +484,8 @@ class AttendanceController extends Controller {
     }
 
     public function getBranchCalendar() {
+        $this->requireApiToken();
+
         $branchName = $_GET['branch_name'] ?? '';
         $year = intval($_GET['year'] ?? date('Y'));
         $month = intval($_GET['month'] ?? date('n'));
