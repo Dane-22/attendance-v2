@@ -334,12 +334,17 @@ ob_start();
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
 <script>
+    // Force HTTPS - camera requires secure context
+    if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        window.location.href = window.location.href.replace('http:', 'https:');
+    }
+
     const video = document.getElementById('video');
     const loading = document.getElementById('loading');
     const lastScan = document.getElementById('lastScan');
     const offlineIndicator = document.getElementById('offlineIndicator');
     const branchCode = '<?= htmlspecialchars($branch['branch_code']) ?>';
-    
+
     let scanning = true;
     let scanCooldown = false;
 
