@@ -33,12 +33,15 @@ class Router {
     public function dispatch() {
         $url = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $scriptName = dirname($_SERVER['SCRIPT_NAME']);
-        $url = str_replace($scriptName, '', $url);
+
+        // Remove script path from URL properly (only at beginning)
+        if ($scriptName !== '/' && strpos($url, $scriptName) === 0) {
+            $url = substr($url, strlen($scriptName));
+        }
         $url = trim($url, '/');
 
         // Debug: log details
         error_log('Router DEBUG - URI: ' . $_SERVER['REQUEST_URI'] . ', Script: ' . $scriptName . ', URL: ' . $url);
-        error_log('Router DEBUG - Registered routes: ' . print_r(array_keys($this->routes), true));
 
         if ($this->match($url)) {
             $controller = $this->params['controller'];
