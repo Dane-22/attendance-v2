@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/JWT.php';
+
 class Controller {
 
     /**
@@ -77,6 +79,50 @@ class Controller {
                 'message' => 'Provide token via Authorization: Bearer <token> header or api_token parameter'
             ], 401);
         }
+    }
+
+    /**
+     * Validate and decode JWT token from Authorization header
+     * @return array|false Decoded JWT payload or false if invalid
+     */
+    protected function validateJWT() {
+        $token = JWT::getBearerToken();
+
+        if (!$token && isset($_SESSION['jwt_token'])) {
+            $token = $_SESSION['jwt_token'];
+        }
+
+        if (!$token) {
+            return false;
+        }
+
+        return JWT::validate($token);
+    }
+
+    /**
+     * Require valid JWT token - returns 401 if token is missing or invalid
+     * Use at the start of API endpoint methods that require user authentication
+     */
+    protected function requireJWT() {
+        $payload = $this->validateJWT();
+
+        if (!$payload) {
+            $this->jsonResponse([
+                'success' => false,
+                'error' => 'Unauthorized. Valid JWT token required.',
+                'message' => 'Provide token via Authorization: Bearer <token> header or include jwt_token in session'
+            ], 401);
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Get current authenticated user from JWT token
+     * @return array|null User data from JWT or null if not authenticated
+     */
+    protected function getCurrentUser() {
+        return $this->validateJWT();
     }
 
     protected function view($view, $data = []) {

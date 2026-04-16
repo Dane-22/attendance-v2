@@ -737,13 +737,11 @@ function renderEmployees() {
                 <td class="time-cell">${checkOutTime}</td>
                 <td class="hours-cell">${totalHours}</td>
                 <td class="actions-cell">
-                    ${!isAbsent ? 
-                        `<button class="btn-pill btn-absent" onclick="markAttendance(${emp.id}, 'absent')">Mark Absent</button>` :
-                        `<button class="btn-pill btn-timein" onclick="markAttendance(${emp.id}, 'present')">Mark Present</button>`
-                    }
-                    ${!isPresent ? 
+                    ${!emp.check_in ? 
                         `<button class="btn-pill btn-timein" onclick="markAttendance(${emp.id}, 'present')">Time In</button>` :
-                        `<button class="btn-pill btn-checkout" onclick="markAttendance(${emp.id}, 'present')">Time Out</button>`
+                        !emp.check_out ?
+                            `<button class="btn-pill btn-checkout" onclick="checkoutEmployee(${emp.id})">Time Out</button>` :
+                            `<button class="btn-pill btn-timein" onclick="markAttendance(${emp.id}, 'present')">Time In</button>`
                     }
                 </td>
             </tr>
@@ -837,6 +835,11 @@ function markAttendance(employeeId, status, isUndo = false) {
         console.error('Fetch error:', error);
         alert('Error: ' + error.message);
     });
+}
+
+function checkoutEmployee(employeeId) {
+    // Use markAttendance with 'present' status - backend will handle checkout if already checked in
+    markAttendance(employeeId, 'present');
 }
 
 function updateStats() {

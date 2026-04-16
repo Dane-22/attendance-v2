@@ -157,7 +157,7 @@ class EmployeeController extends Controller {
     }
 
     public function getNextCode() {
-        $this->requireApiToken();
+        $currentUser = $this->requireJWT();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $position = $_POST['position'] ?? '';
@@ -171,7 +171,7 @@ class EmployeeController extends Controller {
     }
 
     public function getEmployee($id) {
-        $this->requireApiToken();
+        $currentUser = $this->requireJWT();
 
         header('Content-Type: application/json');
         $employee = $this->employeeModel->findById($id);

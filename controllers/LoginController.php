@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../core/Controller.php';
+require_once __DIR__ . '/../core/JWT.php';
 
 class LoginController extends Controller {
     private $employeeModel;
@@ -39,12 +40,39 @@ class LoginController extends Controller {
                     $_SESSION['admin_id'] = $admin['id'];
                     $_SESSION['admin_name'] = $admin['name'];
                     $_SESSION['admin_role'] = $admin['role'];
-                    
-                    // If admin has branch assignment, store branch info
+
+                    // Generate JWT token for API access
+                    $jwtPayload = [
+                        'user_id' => $admin['id'],
+                        'username' => $admin['username'],
+                        'name' => $admin['name'],
+                        'role' => $admin['role'],
+                        'type' => 'admin'
+                    ];
                     if (!empty($admin['branch_code'])) {
+                        $jwtPayload['branch_code'] = $admin['branch_code'];
                         $_SESSION['branch_code'] = $admin['branch_code'];
                         $_SESSION['is_branch_device'] = true;
-                        // Redirect branch devices to QR scanner
+                    }
+                    $jwtToken = JWT::generate($jwtPayload, 86400); // 24 hours
+                    $_SESSION['jwt_token'] = $jwtToken;
+
+                    // If this is an AJAX/API request, return JSON with token
+                    if ($this->isAjaxRequest()) {
+                        $this->jsonResponse([
+                            'success' => true,
+                            'token' => $jwtToken,
+                            'user' => [
+                                'id' => $admin['id'],
+                                'name' => $admin['name'],
+                                'role' => $admin['role']
+                            ],
+                            'redirect' => !empty($admin['branch_code']) ? 'branch/scanner' : 'dashboard'
+                        ]);
+                    }
+
+                    // Redirect branch devices to QR scanner
+                    if (!empty($admin['branch_code'])) {
                         $this->redirect('branch/scanner');
                     } else {
                         $this->redirect('dashboard');
@@ -80,6 +108,31 @@ class LoginController extends Controller {
             if ($employee) {
                 $_SESSION['employee_id'] = $employee['id'];
                 $_SESSION['employee_name'] = $employee['first_name'] . ' ' . $employee['last_name'];
+
+                // Generate JWT token for API access
+                $jwtPayload = [
+                    'user_id' => $employee['id'],
+                    'employee_code' => $employee['employee_code'],
+                    'name' => $employee['first_name'] . ' ' . $employee['last_name'],
+                    'type' => 'employee'
+                ];
+                $jwtToken = JWT::generate($jwtPayload, 86400); // 24 hours
+                $_SESSION['jwt_token'] = $jwtToken;
+
+                // If this is an AJAX/API request, return JSON with token
+                if ($this->isAjaxRequest()) {
+                    $this->jsonResponse([
+                        'success' => true,
+                        'token' => $jwtToken,
+                        'user' => [
+                            'id' => $employee['id'],
+                            'name' => $employee['first_name'] . ' ' . $employee['last_name'],
+                            'code' => $employee['employee_code']
+                        ],
+                        'redirect' => 'employee/dashboard.php'
+                    ]);
+                }
+
                 $success = 'Login successful! Redirecting...';
                 header('Refresh: 2; URL=employee/dashboard.php');
             } else {
@@ -95,8 +148,19 @@ class LoginController extends Controller {
     }
 
     public function logout() {
+        // Clear JWT token on logout
+        $_SESSION['jwt_token'] = null;
         session_destroy();
         $this->redirect('/');
+    }
+
+    /**
+     * Check if the current request is an AJAX/API request
+     * @return bool
+     */
+    private function isAjaxRequest() {
+        return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+               strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
     }
 
     public function branchLogin() {
