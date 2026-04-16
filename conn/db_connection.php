@@ -1,9 +1,11 @@
 <?php
 // Database connection for JAJR Attendance System
-$host = 'localhost';
-$dbname = 'attendance-system';
-$username = 'attendance_user';
-$password = 'JaJr12390786@';
+// Uses environment variables (for Docker/production) with hardcoded fallbacks (for legacy/local)
+
+$host = getenv('DB_HOST') ?: 'localhost';
+$dbname = getenv('DB_DATABASE') ?: 'attendance-system';
+$username = getenv('DB_USERNAME') ?: 'attendance_user';
+$password = getenv('DB_PASSWORD') ?: 'JaJr12390786@';
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
