@@ -27,8 +27,7 @@ CREATE TABLE IF NOT EXISTS attendance (
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_attendance (employee_id, date)
+    FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
 );
 
 -- Admins table

@@ -1,4 +1,5 @@
 <?php ob_start(); ?>
+<?php $baseUrl = dirname($_SERVER['SCRIPT_NAME']); ?>
 
 <div class="min-h-screen flex items-center justify-center p-4" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);">
     <div class="w-full max-w-lg rounded-2xl shadow-2xl p-6" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
@@ -63,7 +64,7 @@
 
         <!-- Back Button -->
         <div class="mt-6 text-center">
-            <a href="/login" class="text-sm text-gray-500 hover:text-orange-600 flex items-center justify-center gap-1">
+            <a href="<?= $baseUrl ?>/login" class="text-sm text-gray-500 hover:text-orange-600 flex items-center justify-center gap-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>

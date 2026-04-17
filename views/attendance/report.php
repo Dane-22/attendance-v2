@@ -1,11 +1,12 @@
 <?php ob_start(); ?>
+<?php $baseUrl = dirname($_SERVER['SCRIPT_NAME']); ?>
 
 <div class="card">
     <div class="header-actions">
         <h2>Monthly Attendance Report</h2>
     </div>
-    
-    <form method="GET" action="/attendance/report" class="filter-form">
+
+    <form method="GET" action="<?= $baseUrl ?>/attendance/report" class="filter-form">
         <div class="form-group">
             <label for="month">Month</label>
             <select id="month" name="month">

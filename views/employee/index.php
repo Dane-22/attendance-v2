@@ -3,7 +3,8 @@
 <div class="card">
     <div class="header-actions">
         <h2>Employees</h2>
-        <a href="/employee/create" class="btn btn-primary">Add Employee</a>
+        <?php $baseUrl = dirname($_SERVER['SCRIPT_NAME']); ?>
+        <a href="<?= $baseUrl ?>/employee/create" class="btn btn-primary">Add Employee</a>
     </div>
     
     <table>
@@ -27,9 +28,9 @@
                     <td><?= htmlspecialchars($employee['department'] ?: 'N/A') ?></td>
                     <td><?= htmlspecialchars($employee['position'] ?: 'N/A') ?></td>
                     <td class="actions">
-                        <a href="/attendance/by-employee/<?= $employee['id'] ?>" class="btn btn-secondary btn-sm">Attendance</a>
-                        <a href="/employee/edit/<?= $employee['id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
-                        <a href="/employee/delete/<?= $employee['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure? This will also delete all attendance records for this employee.')">Delete</a>
+                        <a href="<?= $baseUrl ?>/attendance/by-employee/<?= $employee['id'] ?>" class="btn btn-secondary btn-sm">Attendance</a>
+                        <a href="<?= $baseUrl ?>/employee/edit/<?= $employee['id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
+                        <a href="<?= $baseUrl ?>/employee/delete/<?= $employee['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure? This will also delete all attendance records for this employee.')">Delete</a>
                     </td>
                 </tr>
                 <?php endforeach; ?>

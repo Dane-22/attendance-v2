@@ -3,6 +3,19 @@
 class Router {
     private $routes = [];
     private $params = [];
+    private static $baseUrl = null;
+
+    /**
+     * Get the base URL of the application (handles subdirectory installs)
+     * @return string Base URL path (e.g., '/jajr-v2' or '')
+     */
+    public static function getBaseUrl() {
+        if (self::$baseUrl === null) {
+            $scriptName = dirname($_SERVER['SCRIPT_NAME']);
+            self::$baseUrl = ($scriptName === '/' || $scriptName === '\\') ? '' : $scriptName;
+        }
+        return self::$baseUrl;
+    }
 
     public function add($route, $params = []) {
         $route = preg_replace('/\//', '\\/', $route);

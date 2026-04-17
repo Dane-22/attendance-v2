@@ -6,6 +6,10 @@ $financeMenu = [
     ['label' => 'Cash Advance', 'icon' => 'fa-hand-holding-usd', 'url' => '/finance/cash-advance', 'id' => 'cash-advance'],
     ['label' => 'Billing', 'icon' => 'fa-file-invoice-dollar', 'url' => '/finance/billing', 'id' => 'billing'],
 ];
+
+// Capture the nested content
+$innerContent = $content;
+ob_start();
 ?>
 
 <style>
@@ -102,8 +106,11 @@ $financeMenu = [
         </nav>
     </aside>
     <div class="finance-content">
-        <?= $content ?>
+        <?= $innerContent ?>
     </div>
 </div>
 
-<?php require __DIR__ . '/../layouts/main.php'; ?>
+<?php
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/main.php';
+?>

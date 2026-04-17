@@ -1,5 +1,6 @@
 <?php
 $title = 'Branch QR Scanner';
+$baseUrl = dirname($_SERVER['SCRIPT_NAME']);
 ob_start();
 ?>
 
@@ -473,12 +474,20 @@ ob_start();
         requestAnimationFrame(scanQR);
     }
 
-    // Handle scanned QR code
+    let pendingQRData = null;
+
+    // Handle scanned QR code - with confirmation
     async function handleScan(qrData) {
+        if (scanCooldown) return;
+
         scanCooldown = true;
-        
+        pendingQRData = qrData;
+
         try {
-            const response = await fetch('/branch/scan', {
+            const basePath = '<?= $baseUrl ?>';
+
+            // First, get preview of what action will be taken
+            const previewResponse = await fetch(`${basePath}/branch/preview`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
@@ -486,18 +495,78 @@ ob_start();
                 body: 'qr_data=' + encodeURIComponent(qrData)
             });
 
-            const result = await response.json();
+            const preview = await previewResponse.json();
+
+            if (preview.error) {
+                displayResult({ error: preview.error });
+                resetCooldown();
+                return;
+            }
+
+            // Show confirmation dialog
+            const confirmed = confirm(preview.message);
+
+            if (confirmed) {
+                // Proceed with actual scan
+                await processScan(qrData);
+            } else {
+                // Cancelled - show ready state
+                lastScan.innerHTML = `
+                    <div class="scan-icon">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                    <div class="scan-details">
+                        <h3>Ready to scan</h3>
+                        <p>Point camera at employee QR code</p>
+                    </div>
+                `;
+                resetCooldown();
+            }
+        } catch (error) {
+            console.error('Preview error:', error);
+            displayResult({
+                error: 'Network error: ' + error.message
+            });
+            resetCooldown();
+        }
+    }
+
+    // Process the actual scan after confirmation
+    async function processScan(qrData) {
+        try {
+            const basePath = '<?= $baseUrl ?>';
+
+            const response = await fetch(`${basePath}/branch/scan`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'qr_data=' + encodeURIComponent(qrData)
+            });
+
+            const text = await response.text();
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch (e) {
+                result = { error: 'Invalid JSON response: ' + text.substring(0, 100) };
+            }
+
             displayResult(result);
         } catch (error) {
             console.error('Scan error:', error);
             displayResult({
-                error: 'Network error. Check connection.'
+                error: 'Network error: ' + error.message
             });
         }
 
-        // 3 second cooldown between scans
+        resetCooldown();
+    }
+
+    function resetCooldown() {
         setTimeout(() => {
             scanCooldown = false;
+            pendingQRData = null;
         }, 3000);
     }
 
@@ -548,7 +617,8 @@ ob_start();
 
     function logout() {
         if (confirm('Logout from this branch device?')) {
-            window.location.href = '/branch/logout';
+            const basePath = '<?= $baseUrl ?>';
+            window.location.href = basePath + '/branch/logout';
         }
     }
 

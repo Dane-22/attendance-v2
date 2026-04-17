@@ -1,11 +1,20 @@
 <?php
 // new_index.php - JAJR Attendance System Landing Page
+
+// Load environment variables from .env file
+require_once __DIR__ . '/core/Dotenv.php';
+Dotenv::load();
+
 include __DIR__ . '/conn/db_connection.php';
 session_start();
 
+// Get base URL for subdirectory installs
+$baseUrl = dirname($_SERVER['SCRIPT_NAME']);
+$baseUrl = ($baseUrl === '/' || $baseUrl === '\\') ? '' : $baseUrl;
+
 // If user already logged in, redirect to employee dashboard
 if (!empty($_SESSION['employee_id'])) {
-    header('Location: employee/dashboard.php');
+    header('Location: ' . $baseUrl . '/employee/dashboard.php');
     exit;
 }
 ?>
@@ -16,8 +25,8 @@ if (!empty($_SESSION['employee_id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>JAJR Attendance System — Biometric & Geo-Fenced Workforce Security</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="assets/css/universal.css">
-    <link rel="icon" type="image/x-icon" href="assets/img/profile/jajr-logo.png">
+    <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/universal.css">
+    <link rel="icon" type="image/x-icon" href="<?= $baseUrl ?>/assets/img/profile/jajr-logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body class="font-sans antialiased">
@@ -44,7 +53,7 @@ if (!empty($_SESSION['employee_id'])) {
                     <a href="#features" class="nav-link-attendance text-sm">Features</a>
                     <a href="#solutions" class="nav-link-attendance text-sm">Solutions</a>
                     <a href="#pricing" class="nav-link-attendance text-sm">Pricing</a>
-                    <a href="/login" class="nav-link-attendance text-sm">Log In</a>
+                    <a href="<?= $baseUrl ?>/login" class="nav-link-attendance text-sm">Log In</a>
                     <a href="" class="btn-orange-primary text-sm py-2 px-5">Get Started</a>
                 </div>
 
@@ -66,7 +75,7 @@ if (!empty($_SESSION['employee_id'])) {
                 <a href="#features" class="text-white text-lg font-medium py-2 hover:text-orange-500 transition" onclick="closeMobileMenu()">Features</a>
                 <a href="#solutions" class="text-white text-lg font-medium py-2 hover:text-orange-500 transition" onclick="closeMobileMenu()">Solutions</a>
                 <a href="#pricing" class="text-white text-lg font-medium py-2 hover:text-orange-500 transition" onclick="closeMobileMenu()">Pricing</a>
-                <a href="/login" class="text-white text-lg font-medium py-2 hover:text-orange-500 transition">Log In</a>
+                <a href="<?= $baseUrl ?>/login" class="text-white text-lg font-medium py-2 hover:text-orange-500 transition">Log In</a>
                 <a href="signup.php" class="btn-orange-primary text-center mt-2">Get Started</a>
             </div>
         </div>

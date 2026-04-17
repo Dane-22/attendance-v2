@@ -67,22 +67,43 @@ class Employee extends Model {
         $query .= ' WHERE id = :id';
 
         $stmt = $this->db->prepare($query);
+
+        $employee_code = $data['employee_code'];
+        $first_name = $data['first_name'];
+        $middle_name = $data['middle_name'] ?? null;
+        $last_name = $data['last_name'];
+        $email = $data['email'];
+        $department = $data['department'] ?? null;
+        $position = $data['position'];
+        $status = $data['status'] ?? 'Active';
+        $daily_rate = $data['daily_rate'] ?? 0;
+        $has_deduction = $data['has_deduction'] ?? 1;
+
         $stmt->bindParam(':id', $id);
-        $stmt->bindParam(':employee_code', $data['employee_code']);
-        $stmt->bindParam(':first_name', $data['first_name']);
-        $stmt->bindParam(':middle_name', $data['middle_name'] ?? null);
-        $stmt->bindParam(':last_name', $data['last_name']);
-        $stmt->bindParam(':email', $data['email']);
-        $stmt->bindParam(':department', $data['department']);
-        $stmt->bindParam(':position', $data['position']);
-        $stmt->bindParam(':status', $data['status'] ?? 'Active');
-        $stmt->bindParam(':daily_rate', $data['daily_rate'] ?? 0);
-        $stmt->bindParam(':has_deduction', $data['has_deduction'] ?? 1);
+        $stmt->bindParam(':employee_code', $employee_code);
+        $stmt->bindParam(':first_name', $first_name);
+        $stmt->bindParam(':middle_name', $middle_name);
+        $stmt->bindParam(':last_name', $last_name);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':department', $department);
+        $stmt->bindParam(':position', $position);
+        $stmt->bindParam(':status', $status);
+        $stmt->bindParam(':daily_rate', $daily_rate);
+        $stmt->bindParam(':has_deduction', $has_deduction);
 
         if (isset($data['profile_image'])) {
-            $stmt->bindParam(':profile_image', $data['profile_image']);
+            $profile_image = $data['profile_image'];
+            $stmt->bindParam(':profile_image', $profile_image);
         }
 
+        return $stmt->execute();
+    }
+
+    public function updateDeductionStatus($id, $has_deduction) {
+        $query = 'UPDATE ' . $this->table . ' SET has_deduction = :has_deduction WHERE id = :id';
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':has_deduction', $has_deduction, PDO::PARAM_INT);
         return $stmt->execute();
     }
 
@@ -113,6 +134,14 @@ class Employee extends Model {
         $query = 'SELECT COUNT(*) FROM ' . $this->table;
         $stmt = $this->db->query($query);
         return $stmt->fetchColumn();
+    }
+
+    public function findByBranch($branchName) {
+        $query = 'SELECT * FROM ' . $this->table . ' WHERE branch_name = :branch_name ORDER BY last_name ASC';
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':branch_name', $branchName);
+        $stmt->execute();
+        return $stmt->fetchAll();
     }
 
     public function getNextEmployeeCode($position) {

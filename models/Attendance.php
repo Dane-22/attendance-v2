@@ -145,12 +145,130 @@ class Attendance extends Model {
         return $stmt->fetch();
     }
 
+    public function getAllTodayUnchecked() {
+        $query = 'SELECT a.*, b.branch_name 
+                  FROM ' . $this->table . ' a 
+                  LEFT JOIN branches b ON a.branch_code = b.branch_code 
+                  WHERE a.date = CURDATE() 
+                  AND (a.check_out IS NULL OR a.check_out = "") 
+                  ORDER BY a.check_in DESC';
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
     public function updateCheckOut($id, $checkOutTime) {
         $query = 'UPDATE ' . $this->table . ' SET check_out = :check_out WHERE id = :id';
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':id', $id);
         $stmt->bindParam(':check_out', $checkOutTime);
         return $stmt->execute();
+    }
+
+    /**
+     * Update employee's branch_name to match the branch where they checked in
+     * @param int $employeeId Employee ID
+     * @param string $branchCode Branch code
+     */
+    private function updateEmployeeBranch($employeeId, $branchCode) {
+        // Get branch_name from branches table
+        $query = 'SELECT branch_name FROM branches WHERE branch_code = :branch_code LIMIT 1';
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':branch_code', $branchCode);
+        $stmt->execute();
+        $branch = $stmt->fetch();
+
+        if ($branch && !empty($branch['branch_name'])) {
+            // Update employee's branch_name
+            $updateQuery = 'UPDATE employees SET branch_name = :branch_name WHERE id = :employee_id';
+            $updateStmt = $this->db->prepare($updateQuery);
+            $updateStmt->bindParam(':branch_name', $branch['branch_name']);
+            $updateStmt->bindParam(':employee_id', $employeeId);
+            $updateStmt->execute();
+        }
+    }
+
+    public function updateCheckIn($id, $checkInTime, $branchCode) {
+        $query = 'UPDATE ' . $this->table . ' SET check_in = :check_in, check_out = NULL, branch_code = :branch_code, notes = :notes WHERE id = :id';
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':check_in', $checkInTime);
+        $stmt->bindParam(':branch_code', $branchCode);
+        $notes = 'QR Scan at ' . $branchCode;
+        $stmt->bindParam(':notes', $notes);
+        return $stmt->execute();
+    }
+
+    /**
+     * Unified attendance recording method used by both QR scanner and manual Time In/Out buttons
+     *
+     * @param int $employeeId Employee ID
+     * @param string $branchCode Branch code where attendance is being recorded
+     * @param string $date Date in Y-m-d format
+     * @param string $source Source of the attendance record ('qr' or 'manual')
+     * @param string $currentTime Current time in H:i:s format (optional, defaults to now)
+     * @return array Result with success status, action taken, and any error messages
+     */
+    public function recordAttendance($employeeId, $branchCode, $date, $source = 'manual', $currentTime = null) {
+        // Set Philippines timezone
+        date_default_timezone_set('Asia/Manila');
+
+        if (!$currentTime) {
+            $currentTime = date('H:i:s');
+        }
+
+        // Get the last attendance record for this employee today
+        $lastAttendance = $this->getLastTodayByEmployee($employeeId, $date);
+
+        if ($lastAttendance) {
+            // Employee has attendance today - check if they need to check out
+            if (empty($lastAttendance['check_out'])) {
+                // Check out
+                $this->updateCheckOut($lastAttendance['id'], $currentTime);
+                return [
+                    'success' => true,
+                    'action' => 'check_out',
+                    'record_id' => $lastAttendance['id'],
+                    'message' => 'Check-out recorded'
+                ];
+            }
+            // Already checked out - create NEW record for new check-in session
+        }
+
+        // Create new check-in record (first time today OR new session after checkout)
+        $notes = $source === 'qr' ? 'QR Scan at ' . $branchCode : 'Manual entry at ' . $branchCode;
+        $data = [
+            'employee_id' => $employeeId,
+            'branch_code' => $branchCode,
+            'date' => $date,
+            'check_in' => $currentTime,
+            'check_out' => null,
+            'status' => 'present',
+            'notes' => $notes
+        ];
+
+        $result = $this->create($data);
+
+        if ($result) {
+            // Get the ID of the newly created record
+            $newRecordId = $this->db->lastInsertId();
+
+            // Update employee's branch_name to reflect current branch
+            $this->updateEmployeeBranch($employeeId, $branchCode);
+
+            return [
+                'success' => true,
+                'action' => 'check_in',
+                'record_id' => $newRecordId,
+                'message' => 'Check-in recorded'
+            ];
+        }
+
+        return [
+            'success' => false,
+            'action' => null,
+            'error' => 'Failed to create attendance record'
+        ];
     }
 
     public function getMonthlyReport($month, $year) {
@@ -220,17 +338,17 @@ class Attendance extends Model {
         return $stmt->fetchAll();
     }
 
-    public function getByDateAndBranch($date, $branchName) {
+    public function getByDateAndBranch($date, $branchCode) {
         $query = 'SELECT a.*, e.first_name, e.last_name, e.employee_code, e.department, e.position, b.branch_name 
                   FROM ' . $this->table . ' a 
                   JOIN employees e ON a.employee_id = e.id 
                   LEFT JOIN branches b ON a.branch_code = b.branch_code 
                   WHERE a.date = :date 
-                    AND b.branch_name = :branch_name 
+                    AND a.branch_code = :branch_code 
                   ORDER BY e.last_name ASC';
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':date', $date);
-        $stmt->bindParam(':branch_name', $branchName);
+        $stmt->bindParam(':branch_code', $branchCode);
         $stmt->execute();
         return $stmt->fetchAll();
     }

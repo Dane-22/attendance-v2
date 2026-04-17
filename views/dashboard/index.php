@@ -1,4 +1,5 @@
 <?php ob_start(); ?>
+<?php $baseUrl = dirname($_SERVER['SCRIPT_NAME']); ?>
 
 <div class="card">
     <h2>Dashboard</h2>
@@ -37,9 +38,9 @@
         <h3>Quick Actions</h3>
     </div>
     <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-        <a href="/attendance/create" class="btn btn-primary">Mark Attendance</a>
-        <a href="/employee/create" class="btn btn-primary">Add Employee</a>
-        <a href="/attendance/report" class="btn btn-secondary">View Reports</a>
+        <a href="<?= $baseUrl ?>/attendance/create" class="btn btn-primary">Mark Attendance</a>
+        <a href="<?= $baseUrl ?>/employee/create" class="btn btn-primary">Add Employee</a>
+        <a href="<?= $baseUrl ?>/attendance/report" class="btn btn-secondary">View Reports</a>
     </div>
 </div>
 
@@ -89,7 +90,7 @@
     </table>
     <?php if (count($monthlyReport) > 5): ?>
     <div style="margin-top: 1rem; text-align: center;">
-        <a href="/attendance/report" class="btn btn-secondary">View All Employees</a>
+        <a href="<?= $baseUrl ?>/attendance/report" class="btn btn-secondary">View All Employees</a>
     </div>
     <?php endif; ?>
 </div>

@@ -6,7 +6,7 @@ class Branch extends Model {
     protected $table = 'branches';
 
     public function findAll() {
-        $query = 'SELECT * FROM ' . $this->table . ' ORDER BY branch_name ASC';
+        $query = 'SELECT id, branch_code, branch_name, address, contact_number, status FROM ' . $this->table . ' ORDER BY branch_name ASC';
         $stmt = $this->db->query($query);
         return $stmt->fetchAll();
     }
@@ -69,5 +69,12 @@ class Branch extends Model {
         $query = 'SELECT COUNT(*) FROM ' . $this->table;
         $stmt = $this->db->query($query);
         return $stmt->fetchColumn();
+    }
+
+    public function getLastBranchCode() {
+        $query = 'SELECT branch_code FROM ' . $this->table . ' ORDER BY branch_code DESC LIMIT 1';
+        $stmt = $this->db->query($query);
+        $result = $stmt->fetch();
+        return $result ? $result['branch_code'] : null;
     }
 }

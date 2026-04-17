@@ -219,17 +219,17 @@ ob_start();
     <?php foreach ($branches as $branch): ?>
     <div class="branch-card">
         <div class="branch-avatar">
-            <?= htmlspecialchars($branch['branch_code']) ?>
+            <?= htmlspecialchars($branch['branch_code'] ?? 'N/A') ?>
         </div>
         <div class="branch-info">
-            <div class="branch-name"><?= htmlspecialchars($branch['branch_name']) ?></div>
+            <div class="branch-name"><?= htmlspecialchars($branch['branch_name'] ?? 'Unknown Branch') ?></div>
             <?php if (!empty($branch['address'])): ?>
             <div class="branch-address"><?= htmlspecialchars($branch['address']) ?></div>
             <?php endif; ?>
         </div>
-        <div class="branch-code"><?= htmlspecialchars($branch['branch_code']) ?></div>
-        <div class="branch-status <?= $branch['status'] === 'Inactive' ? 'inactive' : '' ?>">
-            <?= htmlspecialchars($branch['status']) ?>
+        <div class="branchcode"><?= htmlspecialchars($branch['branch_code'] ?? 'N/A') ?></div>
+        <div class="branch-status <?= ($branch['status'] ?? '') === 'Inactive' ? 'inactive' : '' ?>">
+            <?= htmlspecialchars($branch['status'] ?? 'Unknown') ?>
         </div>
         <div class="branch-actions">
             <button class="action-btn" title="Edit" onclick="editBranch(<?= $branch['id'] ?>)"><i class="fas fa-edit"></i></button>
@@ -241,16 +241,16 @@ ob_start();
 
 <script>
     function openAddBranchModal() {
-        alert('Add Branch modal coming soon');
+        window.location.href = '<?= dirname($_SERVER['SCRIPT_NAME']) ?>/branches/create';
     }
 
     function editBranch(id) {
-        window.location.href = '/branches/edit/' + id;
+        window.location.href = '<?= dirname($_SERVER['SCRIPT_NAME']) ?>/branches/edit/' + id;
     }
 
     function deleteBranch(id) {
         if (confirm('Are you sure you want to delete this branch?')) {
-            window.location.href = '/branches/delete/' + id;
+            window.location.href = '<?= dirname($_SERVER['SCRIPT_NAME']) ?>/branches/delete/' + id;
         }
     }
 </script>

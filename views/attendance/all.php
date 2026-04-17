@@ -1,9 +1,10 @@
 <?php ob_start(); ?>
+<?php $baseUrl = dirname($_SERVER['SCRIPT_NAME']); ?>
 
 <div class="card">
     <div class="header-actions">
         <h2>All Attendance Records</h2>
-        <a href="/attendance/create" class="btn btn-primary">Add Attendance</a>
+        <a href="<?= $baseUrl ?>/attendance/create" class="btn btn-primary">Add Attendance</a>
     </div>
     
     <table>
@@ -44,8 +45,8 @@
                         </span>
                     </td>
                     <td class="actions">
-                        <a href="/attendance/edit/<?= $record['id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
-                        <a href="/attendance/delete/<?= $record['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
+                        <a href="<?= $baseUrl ?>/attendance/edit/<?= $record['id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
+                        <a href="<?= $baseUrl ?>/attendance/delete/<?= $record['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
                     </td>
                 </tr>
                 <?php endforeach; ?>

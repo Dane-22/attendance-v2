@@ -1,11 +1,20 @@
 <?php
 // qr-scanner.php - QR Code Login Scanner
+
+// Load environment variables from .env file
+require_once __DIR__ . '/core/Dotenv.php';
+Dotenv::load();
+
 include __DIR__ . '/conn/db_connection.php';
 session_start();
 
+// Get base URL for subdirectory installs
+$baseUrl = dirname($_SERVER['SCRIPT_NAME']);
+$baseUrl = ($baseUrl === '/' || $baseUrl === '\\') ? '' : $baseUrl;
+
 // If already logged in, redirect to dashboard
 if (!empty($_SESSION['employee_id'])) {
-    header('Location: employee/dashboard.php');
+    header('Location: ' . $baseUrl . '/employee/dashboard.php');
     exit;
 }
 
@@ -26,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['qr_data'])) {
         $_SESSION['employee_id'] = $employee['id'];
         $_SESSION['employee_name'] = $employee['first_name'] . ' ' . $employee['last_name'];
         $success = 'Login successful! Redirecting...';
-        header('Refresh: 2; URL=employee/dashboard.php');
+        header('Refresh: 2; URL=' . $baseUrl . '/employee/dashboard.php');
     } else {
         $error = 'Invalid QR code. Please try again.';
     }
@@ -39,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['qr_data'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code Scanner - JAJR Attendance</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="assets/css/universal.css">
+    <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/universal.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- QR Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -148,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['qr_data'])) {
 
             <!-- Back Button -->
             <div class="mt-6 text-center">
-                <a href="login.php" class="text-sm text-gray-500 hover:text-orange-600 flex items-center justify-center gap-1">
+                <a href="<?= $baseUrl ?>/login" class="text-sm text-gray-500 hover:text-orange-600 flex items-center justify-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                     </svg>

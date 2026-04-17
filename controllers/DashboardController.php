@@ -2,6 +2,9 @@
 
 require_once __DIR__ . '/../core/Controller.php';
 
+// Set timezone to Philippines (UTC+8)
+date_default_timezone_set('Asia/Manila');
+
 class DashboardController extends Controller {
     private $attendanceModel;
     private $employeeModel;

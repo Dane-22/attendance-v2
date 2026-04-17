@@ -1,9 +1,10 @@
 <?php ob_start(); ?>
+<?php $baseUrl = dirname($_SERVER['SCRIPT_NAME']); ?>
 
 <div class="card">
     <div class="header-actions">
         <h2>Attendance History - <?= htmlspecialchars($employee['first_name'] . ' ' . $employee['last_name']) ?></h2>
-        <a href="/attendance" class="btn btn-secondary">Back to Attendance</a>
+        <a href="<?= $baseUrl ?>/attendance" class="btn btn-secondary">Back to Attendance</a>
     </div>
     
     <div style="margin-bottom: 1.5rem; color: #6b7280;">

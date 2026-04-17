@@ -356,6 +356,54 @@
             max-width: 100%;
         }
 
+        /* Card Styles - Theme Aware */
+        .card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        [data-theme="dark"] .card {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .card h2, .card h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        /* Table Styles - Theme Aware */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+        }
+
+        td {
+            color: var(--text-primary);
+        }
+
+        tr:hover {
+            background-color: var(--bg-primary);
+        }
+
         /* Footer */
         .footer {
             background: var(--bg-secondary);
@@ -437,37 +485,38 @@
                     <small style="color: var(--text-secondary); font-size: 0.75rem; display: block;">Owned by Arcadius</small>
                 </div>
             </div>
+            <?php $baseUrl = dirname($_SERVER['SCRIPT_NAME']); ?>
             <nav class="nav-menu">
-                <a href="/dashboard" class="nav-item <?= ($_SERVER["REQUEST_URI"] == "/" || strpos($_SERVER["REQUEST_URI"], "/dashboard") !== false) ? "active" : "" ?>">
+                <a href="<?= $baseUrl ?>/dashboard" class="nav-item <?= ($_SERVER["REQUEST_URI"] == "/" || strpos($_SERVER["REQUEST_URI"], "/dashboard") !== false) ? "active" : "" ?>">
                     <i class="fas fa-th-large"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="/attendance" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/attendance") !== false ? "active" : "" ?>">
+                <a href="<?= $baseUrl ?>/attendance" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/attendance") !== false ? "active" : "" ?>">
                     <i class="fas fa-map-marker-alt"></i>
                     <span>Site Attendance</span>
                 </a>
-                <a href="/notifications" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/notifications") !== false ? "active" : "" ?>">
+                <a href="<?= $baseUrl ?>/notifications" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/notifications") !== false ? "active" : "" ?>">
                     <i class="fas fa-bell"></i>
                     <span>Notification</span>
                     <span class="nav-badge">12</span>
                 </a>
-                <a href="/employee" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/employee") !== false ? "active" : "" ?>">
+                <a href="<?= $baseUrl ?>/employee" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/employee") !== false ? "active" : "" ?>">
                     <i class="fas fa-users"></i>
                     <span>Employee List</span>
                 </a>
-                <a href="/branches" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/branches") !== false ? "active" : "" ?>">
+                <a href="<?= $baseUrl ?>/branches" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/branches") !== false ? "active" : "" ?>">
                     <i class="fas fa-building"></i>
                     <span>Branches</span>
                 </a>
-                <a href="/documents" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/documents") !== false ? "active" : "" ?>">
+                <a href="<?= $baseUrl ?>/documents" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/documents") !== false ? "active" : "" ?>">
                     <i class="fas fa-file-alt"></i>
                     <span>Documents</span>
                 </a>
-                <a href="/activity-logs" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/activity-logs") !== false ? "active" : "" ?>">
+                <a href="<?= $baseUrl ?>/activity-logs" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/activity-logs") !== false ? "active" : "" ?>">
                     <i class="fas fa-list-alt"></i>
                     <span>Activity Logs</span>
                 </a>
-                <a href="/attendance-audit" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/attendance-audit") !== false ? "active" : "" ?>">
+                <a href="<?= $baseUrl ?>/attendance-audit" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/attendance-audit") !== false ? "active" : "" ?>">
                     <i class="fas fa-clipboard-check"></i>
                     <span>Attendance Audit</span>
                 </a>
@@ -477,22 +526,22 @@
                     <i class="fas fa-chevron-down submenu-icon" id="financeIcon"></i>
                 </div>
                 <div class="submenu" id="financeSubmenu" style="display: <?= strpos($_SERVER["REQUEST_URI"], "/finance") !== false ? 'block' : 'none' ?>;">
-                    <a href="/finance/payroll" class="submenu-item <?= strpos($_SERVER["REQUEST_URI"], "/finance/payroll") !== false ? 'active' : '' ?>">Payroll</a>
-                    <a href="/finance/overtime" class="submenu-item <?= strpos($_SERVER["REQUEST_URI"], "/finance/overtime") !== false ? 'active' : '' ?>">Overtime</a>
-                    <a href="/finance/billing" class="submenu-item <?= strpos($_SERVER["REQUEST_URI"], "/finance/billing") !== false ? 'active' : '' ?>">Billing</a>
-                    <a href="/finance/cash-advance" class="submenu-item <?= strpos($_SERVER["REQUEST_URI"], "/finance/cash-advance") !== false ? 'active' : '' ?>">Cash Advance</a>
+                    <a href="<?= $baseUrl ?>/finance/payroll" class="submenu-item <?= strpos($_SERVER["REQUEST_URI"], "/finance/payroll") !== false ? 'active' : '' ?>">Payroll</a>
+                    <a href="<?= $baseUrl ?>/finance/overtime" class="submenu-item <?= strpos($_SERVER["REQUEST_URI"], "/finance/overtime") !== false ? 'active' : '' ?>">Overtime</a>
+                    <a href="<?= $baseUrl ?>/finance/billing" class="submenu-item <?= strpos($_SERVER["REQUEST_URI"], "/finance/billing") !== false ? 'active' : '' ?>">Billing</a>
+                    <a href="<?= $baseUrl ?>/finance/cash-advance" class="submenu-item <?= strpos($_SERVER["REQUEST_URI"], "/finance/cash-advance") !== false ? 'active' : '' ?>">Cash Advance</a>
                 </div>
-                <a href="/procurement" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/procurement") !== false ? "active" : "" ?>">
+                <a href="<?= $baseUrl ?>/procurement" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/procurement") !== false ? "active" : "" ?>">
                     <i class="fas fa-shopping-cart"></i>
                     <span>Procurement</span>
                 </a>
-                <a href="/settings" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/settings") !== false ? "active" : "" ?>">
+                <a href="<?= $baseUrl ?>/settings" class="nav-item <?= strpos($_SERVER["REQUEST_URI"], "/settings") !== false ? "active" : "" ?>">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
                 </a>
             </nav>
             <div class="sidebar-footer">
-                <a href="/logout" class="nav-item" style="border-top: 1px solid var(--border-color); margin-top: auto;">
+                <a href="<?= $baseUrl ?>/logout" class="nav-item" style="border-top: 1px solid var(--border-color); margin-top: auto;">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Log Out</span>
                 </a>
@@ -545,7 +594,7 @@
                                 <span>Settings</span>
                             </a>
                             <div style="border-top: 1px solid var(--border-color); margin: 4px 0;"></div>
-                            <a href="/logout" class="dropdown-item">
+                            <a href="<?= $baseUrl ?>/logout" class="dropdown-item">
                                 <i class="fas fa-sign-out-alt"></i>
                                 <span>Logout</span>
                             </a>

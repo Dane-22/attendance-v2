@@ -30,7 +30,21 @@ class BranchController extends Controller {
                 'status' => $_POST['status'] ?: 'Active'
             ];
 
+            // Create branch first
             if ($this->branchModel->create($data)) {
+                // Create admin account for branch device login
+                $adminModel = $this->model('Admin');
+                $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
+                $adminData = [
+                    'username' => 'branch-' . strtolower($_POST['branch_code']),
+                    'password' => $password,
+                    'name' => 'Branch Device - ' . $_POST['branch_name'],
+                    'email' => 'branch-' . strtolower($_POST['branch_code']) . '@jajr.local',
+                    'role' => 'branch',
+                    'branch_code' => $_POST['branch_code']
+                ];
+                $adminModel->create($adminData);
+
                 $_SESSION['success'] = 'Branch created successfully';
                 $this->redirect('/branches');
             } else {
@@ -38,9 +52,24 @@ class BranchController extends Controller {
                 $this->redirect('/branches');
             }
         }
-        
+
+        // Get last branch code and calculate next letter
+        $lastCode = $this->branchModel->getLastBranchCode();
+        $nextCode = 'A'; // Default if no branches exist
+
+        if ($lastCode) {
+            // Get the last character and increment it
+            $lastChar = strtoupper(substr($lastCode, -1));
+            if (ctype_alpha($lastChar) && $lastChar >= 'A' && $lastChar < 'Z') {
+                $nextCode = chr(ord($lastChar) + 1);
+            } elseif ($lastChar === 'Z') {
+                $nextCode = 'AA'; // If we reach Z, start with AA
+            }
+        }
+
         $this->view('branch/create', [
-            'title' => 'Add Branch'
+            'title' => 'Add Branch',
+            'nextBranchCode' => $nextCode
         ]);
     }
 
@@ -55,6 +84,16 @@ class BranchController extends Controller {
             ];
 
             if ($this->branchModel->update($id, $data)) {
+                // Update admin password if provided
+                if (!empty($_POST['password'])) {
+                    $adminModel = $this->model('Admin');
+                    $admin = $adminModel->findByBranchCode($_POST['branch_code']);
+                    if ($admin) {
+                        $hashedPassword = password_hash($_POST['password'], PASSWORD_BCRYPT);
+                        $adminModel->updatePassword($admin['id'], $hashedPassword);
+                    }
+                }
+
                 $_SESSION['success'] = 'Branch updated successfully';
                 $this->redirect('/branches');
             } else {
@@ -64,12 +103,12 @@ class BranchController extends Controller {
         }
 
         $branch = $this->branchModel->findById($id);
-        
+
         if (!$branch) {
             $_SESSION['error'] = 'Branch not found';
             $this->redirect('/branches');
         }
-        
+
         $this->view('branch/edit', [
             'branch' => $branch,
             'title' => 'Edit Branch'

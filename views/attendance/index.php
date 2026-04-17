@@ -1,12 +1,13 @@
 <?php ob_start(); ?>
+<?php $baseUrl = dirname($_SERVER['SCRIPT_NAME']); ?>
 
 <div class="card">
     <div class="header-actions">
         <h2>Attendance for <?= date('F j, Y', strtotime($date)) ?></h2>
-        <a href="/attendance/create" class="btn btn-primary">Add Attendance</a>
+        <a href="<?= $baseUrl ?>/attendance/create" class="btn btn-primary">Add Attendance</a>
     </div>
-    
-    <form method="GET" action="/attendance" class="filter-form">
+
+    <form method="GET" action="<?= $baseUrl ?>/attendance" class="filter-form">
         <div class="form-group">
             <label for="date">Select Date</label>
             <input type="date" id="date" name="date" value="<?= $date ?>">
@@ -41,8 +42,8 @@
                         </span>
                     </td>
                     <td class="actions">
-                        <a href="/attendance/edit/<?= $record['id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
-                        <a href="/attendance/delete/<?= $record['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
+                        <a href="<?= $baseUrl ?>/attendance/edit/<?= $record['id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
+                        <a href="<?= $baseUrl ?>/attendance/delete/<?= $record['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -63,7 +64,7 @@
         Select employees who are present today (<?= date('F j, Y', strtotime($date)) ?>)
     </p>
     
-    <form method="POST" action="/attendance/quick-mark">
+    <form method="POST" action="<?= $baseUrl ?>/attendance/quick-mark">
         <input type="hidden" name="date" value="<?= $date ?>">
         <table>
             <thead>

@@ -148,6 +148,10 @@ class Controller {
     }
 
     protected function redirect($url) {
+        $baseUrl = dirname($_SERVER['SCRIPT_NAME']);
+        if ($url[0] === '/') {
+            $url = $baseUrl . $url;
+        }
         header('Location: ' . $url);
         exit();
     }

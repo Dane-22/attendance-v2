@@ -42,28 +42,51 @@ class AttendanceController extends Controller {
         if (!isset($_GET['branch_code'])) {
             $this->jsonResponse(['error' => 'Branch code required'], 400);
         }
-        
+
         $branchCode = $_GET['branch_code'];
         $date = $_GET['date'] ?? date('Y-m-d');
-        
-        // Get all employees with their attendance status for today
-        $employees = $this->employeeModel->findAll();
+
+        // Get branch name from branch code
+        $branch = $this->branchModel->findByCode($branchCode);
+        $branchName = $branch ? $branch['branch_name'] : null;
+
+        // Get employees assigned to this branch (or all if no branch assignment yet)
+        if ($branchName) {
+            $employees = $this->employeeModel->findByBranch($branchName);
+            // If no employees assigned to this branch, fall back to all employees
+            if (empty($employees)) {
+                $employees = $this->employeeModel->findAll();
+            }
+        } else {
+            $employees = $this->employeeModel->findAll();
+        }
+
         $attendance = $this->attendanceModel->getByDate($date);
-        
+
         // Create attendance lookup by employee_id
         $attendanceMap = [];
         foreach ($attendance as $a) {
             $attendanceMap[$a['employee_id']] = $a;
         }
-        
+
+        // Get current branch for each employee (where they are checked in but not checked out)
+        $allTodayAttendance = $this->attendanceModel->getAllTodayUnchecked();
+        $currentBranchMap = [];
+        foreach ($allTodayAttendance as $a) {
+            if (empty($a['check_out'])) {
+                $currentBranchMap[$a['employee_id']] = $a['branch_code'];
+            }
+        }
+
         // Add attendance status to each employee
         foreach ($employees as &$emp) {
             $emp['attendance_status'] = $attendanceMap[$emp['id']]['status'] ?? null;
             $emp['check_in'] = $attendanceMap[$emp['id']]['check_in'] ?? null;
             $emp['check_out'] = $attendanceMap[$emp['id']]['check_out'] ?? null;
             $emp['attendance_id'] = $attendanceMap[$emp['id']]['id'] ?? null;
+            $emp['current_branch'] = $currentBranchMap[$emp['id']] ?? null;
         }
-        
+
         $this->jsonResponse(['employees' => $employees]);
     }
 
@@ -73,47 +96,61 @@ class AttendanceController extends Controller {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->jsonResponse(['error' => 'POST required'], 405);
         }
-        
+
         $data = json_decode(file_get_contents('php://input'), true);
-        
+
         if (!isset($data['employee_id'], $data['status'])) {
             $this->jsonResponse(['error' => 'Missing required fields'], 400);
         }
-        
+
+        // Set Philippines timezone
+        date_default_timezone_set('Asia/Manila');
+
         $employeeId = $data['employee_id'];
         $status = $data['status'];
         $branchCode = $data['branch_code'] ?? null;
         $date = $data['date'] ?? date('Y-m-d');
-        $notes = $data['notes'] ?? 'Marked via site attendance';
-        
-        // Check if attendance already exists
-        $existing = $this->attendanceModel->getLastTodayByEmployee($employeeId, $date);
-        
-        if ($existing) {
-            // Update existing record
-            if ($status === 'present' && $existing['check_in'] && !$existing['check_out']) {
-                // Check-out
-                $this->attendanceModel->updateCheckOut($existing['id'], date('H:i:s'));
-                $this->jsonResponse(['success' => true, 'message' => 'Check-out recorded']);
+
+        // Use unified attendance recording for 'present' status
+        if ($status === 'present') {
+            $result = $this->attendanceModel->recordAttendance(
+                $employeeId,
+                $branchCode,
+                $date,
+                'manual'
+            );
+
+            if ($result['success']) {
+                $message = $result['action'] === 'check_out' ? 'Check-out recorded' : 'Check-in recorded';
+                $this->jsonResponse(['success' => true, 'message' => $message]);
             } else {
-                // Update status
-                $this->attendanceModel->update($existing['id'], [
-                    'employee_id' => $employeeId,
-                    'date' => $date,
-                    'check_in' => $status === 'present' ? ($existing['check_in'] ?? date('H:i:s')) : null,
-                    'check_out' => null,
-                    'status' => $status,
-                    'notes' => $notes
-                ]);
-                $this->jsonResponse(['success' => true, 'message' => 'Attendance updated']);
+                $this->jsonResponse(['error' => $result['error'] ?? 'Failed to record attendance'], 500);
             }
+            return;
+        }
+
+        // Handle 'absent' status using original logic
+        $notes = $data['notes'] ?? 'Marked via site attendance';
+        $existing = $this->attendanceModel->getLastTodayByEmployee($employeeId, $date);
+
+        if ($existing) {
+            // Update existing record to absent
+            $this->attendanceModel->update($existing['id'], [
+                'employee_id' => $employeeId,
+                'date' => $date,
+                'check_in' => null,
+                'check_out' => null,
+                'status' => $status,
+                'notes' => $notes
+            ]);
+            $this->jsonResponse(['success' => true, 'message' => 'Attendance updated']);
         } else {
-            // Create new record
+            // Create new absent record
             $this->attendanceModel->create([
                 'employee_id' => $employeeId,
                 'branch_code' => $branchCode,
                 'date' => $date,
-                'check_in' => $status === 'present' ? date('H:i:s') : null,
+                'check_in' => null,
                 'check_out' => null,
                 'status' => $status,
                 'notes' => $notes
@@ -125,16 +162,38 @@ class AttendanceController extends Controller {
     public function getTodayStats() {
         $currentUser = $this->requireJWT();
 
+        // Set Philippines timezone
+        date_default_timezone_set('Asia/Manila');
+
         $date = $_GET['date'] ?? date('Y-m-d');
-        $attendance = $this->attendanceModel->getByDate($date);
-        $totalWorkers = $this->employeeModel->countAll();
+        $branchCode = $_GET['branch_code'] ?? null;
+
+        // Get attendance data (filtered by branch if specified)
+        if ($branchCode) {
+            $attendance = $this->attendanceModel->getByDateAndBranch($date, $branchCode);
+            // For branch-specific view, count employees who have attendance records at this branch
+            $totalWorkers = count($attendance);
+        } else {
+            $attendance = $this->attendanceModel->getByDate($date);
+            $totalWorkers = $this->employeeModel->countAll();
+        }
+
         $present = count(array_filter($attendance, fn($a) => $a['status'] === 'present' || $a['status'] === 'late'));
         $absent = count(array_filter($attendance, fn($a) => $a['status'] === 'absent'));
-        
+
+        // Get list of present employees for the tooltip
+        $presentEmployees = array_filter($attendance, fn($a) => $a['status'] === 'present' || $a['status'] === 'late');
+        $presentList = array_map(fn($a) => [
+            'name' => $a['first_name'] . ' ' . $a['last_name'],
+            'time_in' => $a['check_in'] ? date('h:i A', strtotime($a['check_in'])) : '-'
+        ], array_slice($presentEmployees, 0, 5));
+
         $this->jsonResponse([
             'totalWorkers' => $totalWorkers,
             'present' => $present,
-            'absent' => $absent
+            'absent' => $absent,
+            'presentList' => $presentList,
+            'presentTotal' => count($presentEmployees)
         ]);
     }
 
@@ -465,21 +524,24 @@ class AttendanceController extends Controller {
         // Get employee attendance for the month
         $startDate = "$year-" . str_pad($month, 2, '0', STR_PAD_LEFT) . "-01";
         $endDate = date('Y-m-t', strtotime($startDate));
-        
+
         $attendance = $this->attendanceModel->getByDateRange($startDate, $endDate, $employeeCode);
-        
-        // Format for calendar
+
+        // Format for calendar - group by date, allow multiple records per day
         $calendarData = [];
         foreach ($attendance as $record) {
             $dateKey = $record['date'];
-            $calendarData[$dateKey] = [
+            if (!isset($calendarData[$dateKey])) {
+                $calendarData[$dateKey] = [];
+            }
+            $calendarData[$dateKey][] = [
                 'status' => $record['status'],
                 'check_in' => $record['check_in'] ? date('h:i A', strtotime($record['check_in'])) : null,
                 'check_out' => $record['check_out'] ? date('h:i A', strtotime($record['check_out'])) : null,
                 'branch' => $record['branch_name'] ?? 'N/A'
             ];
         }
-        
+
         $this->jsonResponse(['attendance' => $calendarData]);
     }
 

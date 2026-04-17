@@ -1,4 +1,5 @@
 <?php ob_start(); ?>
+<?php $baseUrl = dirname($_SERVER['SCRIPT_NAME']); ?>
 
 <div class="min-h-screen flex items-center justify-center p-4" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);">
     <div class="w-full max-w-md rounded-2xl shadow-2xl p-8" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
@@ -93,7 +94,7 @@
         </div>
 
         <!-- QR Code Scanner Button -->
-        <a href="/login/qr" class="block w-full py-4 px-6 border-2 border-orange-500 rounded-lg text-center hover:bg-orange-50 transition-colors group">
+        <a href="<?= $baseUrl ?>/login/qr" class="block w-full py-4 px-6 border-2 border-orange-500 rounded-lg text-center hover:bg-orange-50 transition-colors group">
             <div class="flex items-center justify-center gap-3">
                 <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background: #fff7ed;">
                     <svg class="w-6 h-6" style="color: #FF6B00;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,7 +113,7 @@
 
         <!-- Back to Home -->
         <div class="mt-6 text-center">
-            <a href="/" class="text-sm text-gray-500 hover:text-orange-600 flex items-center justify-center gap-1">
+            <a href="<?= $baseUrl ?>/" class="text-sm text-gray-500 hover:text-orange-600 flex items-center justify-center gap-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>

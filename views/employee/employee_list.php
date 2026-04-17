@@ -2,6 +2,7 @@
 // Note: $employees and $totalEmployees are passed from EmployeeController
 
 ob_start();
+$baseUrl = dirname($_SERVER['SCRIPT_NAME']);
 
 // Helper function to format employee name
 function formatEmployeeName($emp) {
@@ -213,6 +214,23 @@ function getAvatarInitials($emp) {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        border-radius: 50%;
+        display: block;
+    }
+
+    .avatar-initials {
+        color: #000000;
+        font-weight: 600;
+        font-size: 0.9rem;
+        line-height: 1;
+    }
+
+    /* When image fails to load, show initials as fallback */
+    .employee-avatar.show-initials::before {
+        content: attr(data-initials);
+        color: #000000;
+        font-weight: 600;
+        font-size: 0.9rem;
     }
 
     .employee-info {
@@ -373,12 +391,19 @@ function getAvatarInitials($emp) {
 <div class="employee-list">
     <?php foreach ($employees as $employee): ?>
     <div class="employee-card">
-        <div class="employee-avatar">
+        <div class="employee-avatar" data-initials="<?= getAvatarInitials($employee) ?? '' ?>">
             <?php $initials = getAvatarInitials($employee); ?>
             <?php if ($initials): ?>
-                <?= $initials ?>
+                <span class="avatar-initials"><?= $initials ?></span>
             <?php else: ?>
-                <img src="/<?= htmlspecialchars($employee['profile_image']) ?>" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                <?php
+                $imgPath = $employee['profile_image'];
+                // If path doesn't start with 'uploads/', prepend the uploads directory
+                if (!str_starts_with($imgPath, 'uploads/')) {
+                    $imgPath = 'uploads/profile_images/' . $imgPath;
+                }
+                ?>
+                <img src="<?= $baseUrl ?>/<?= htmlspecialchars($imgPath) ?>" alt="" onerror="this.style.display='none'; this.parentElement.classList.add('show-initials');" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
             <?php endif; ?>
         </div>
         <div class="employee-info">
@@ -388,7 +413,7 @@ function getAvatarInitials($emp) {
         <div class="employee-code"><?= htmlspecialchars($employee['employee_code']) ?></div>
         <div class="employee-position"><?= htmlspecialchars($employee['position']) ?></div>
         <div class="employee-status"><?= htmlspecialchars($employee['status']) ?></div>
-        <div class="deduction-badge <?= !empty($employee['has_deduction']) ? 'with' : 'without' ?>">
+        <div class="deduction-badge <?= !empty($employee['has_deduction']) ? 'with' : 'without' ?>" onclick="toggleDeduction(<?= $employee['id'] ?>, <?= !empty($employee['has_deduction']) ? 1 : 0 ?>)" style="cursor: pointer;" title="Click to toggle deduction status">
             <i class="fas fa-<?= !empty($employee['has_deduction']) ? 'check' : 'times' ?>-circle"></i>
             <?= !empty($employee['has_deduction']) ? 'With Deductions' : 'No Deductions' ?>
         </div>
@@ -409,7 +434,8 @@ function getAvatarInitials($emp) {
             <h2>Add New Employee</h2>
             <button class="modal-close" onclick="closeAddEmployeeModal()">&times;</button>
         </div>
-        <form id="addEmployeeForm" method="POST" action="/employee/create" enctype="multipart/form-data">
+        <?php $baseUrl = dirname($_SERVER['SCRIPT_NAME']); ?>
+        <form id="addEmployeeForm" method="POST" action="<?= $baseUrl ?>/employee/create" enctype="multipart/form-data">
             
             <!-- Profile Information -->
             <div class="form-section">
@@ -491,7 +517,7 @@ function getAvatarInitials($emp) {
                 <h3 class="form-section-title">Profile Image</h3>
                 <div class="profile-image-section">
                     <div class="profile-preview" id="profilePreview">
-                        <img src="/assets/images/default-avatar.png" alt="Default Avatar" id="previewImg">
+                        <img src="<?= $baseUrl ?>/assets/images/default-avatar.svg" alt="Default Avatar" id="previewImg">
                     </div>
                     <div class="profile-upload">
                         <label for="profile_image" class="upload-btn">
@@ -599,7 +625,7 @@ function getAvatarInitials($emp) {
                 <h3 class="form-section-title">Profile Image</h3>
                 <div class="profile-image-section">
                     <div class="profile-preview" id="editProfilePreview">
-                        <img src="/assets/images/default-avatar.png" alt="Avatar" id="editPreviewImg">
+                        <img src="<?= $baseUrl ?>/assets/images/default-avatar.svg" alt="Avatar" id="editPreviewImg">
                     </div>
                     <div class="profile-upload">
                         <label for="edit_profile_image" class="upload-btn">
@@ -753,6 +779,56 @@ function getAvatarInitials($emp) {
         border-color: var(--accent-color);
         color: var(--accent-color);
         font-weight: 600;
+    }
+
+    /* Enhanced Form Styling */
+    .form-group input::placeholder,
+    .form-group select option:first-child {
+        color: var(--text-secondary);
+        opacity: 0.7;
+    }
+
+    .form-group input:hover,
+    .form-group select:hover {
+        border-color: var(--accent-color);
+        opacity: 0.8;
+    }
+
+    /* Form Section Hover Effect */
+    .form-section:hover .form-section-title {
+        color: var(--accent-color);
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    }
+
+    /* Dark Theme Enhancements */
+    [data-theme="dark"] .modal-content {
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    [data-theme="dark"] .form-group input,
+    [data-theme="dark"] .form-group select {
+        background: #0d0d0d;
+        border-color: #333;
+    }
+
+    [data-theme="dark"] .form-group input:focus,
+    [data-theme="dark"] .form-group select:focus {
+        background: #141414;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+    }
+
+    [data-theme="dark"] .profile-image-section {
+        background: #0d0d0d;
+    }
+
+    [data-theme="dark"] .toggle-container {
+        background: #0d0d0d;
+    }
+
+    [data-theme="dark"] .info-text {
+        background: #0d0d0d;
+        border: 1px solid var(--border-color);
     }
 
     /* Toggle Switch */
@@ -945,6 +1021,26 @@ function getAvatarInitials($emp) {
 
     .btn-save:hover {
         opacity: 0.9;
+        box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+    }
+
+    /* Dark Theme Button Enhancements */
+    [data-theme="dark"] .btn-cancel {
+        background: #0d0d0d;
+        border-color: #333;
+    }
+
+    [data-theme="dark"] .btn-cancel:hover {
+        background: #1a1a1a;
+        border-color: var(--accent-color);
+    }
+
+    [data-theme="dark"] .upload-btn {
+        background: rgba(255, 215, 0, 0.05);
+    }
+
+    [data-theme="dark"] .upload-btn:hover {
+        background: var(--accent-color);
     }
 
     @media (max-width: 768px) {
@@ -973,7 +1069,8 @@ function getAvatarInitials($emp) {
 
         // Fetch next code from server
         try {
-            const response = await fetch('/employee/next-code', {
+            const basePath = '<?= $baseUrl ?>';
+        const response = await fetch(`${basePath}/employee/next-code`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -1038,7 +1135,7 @@ function getAvatarInitials($emp) {
         document.body.style.overflow = '';
         document.getElementById('addEmployeeForm').reset();
         document.getElementById('employee_code').value = '';
-        document.getElementById('previewImg').src = '/assets/images/default-avatar.png';
+        document.getElementById('previewImg').src = '<?= $baseUrl ?>/assets/images/default-avatar.svg';
     }
 
     function previewImage(event) {
@@ -1057,12 +1154,14 @@ function getAvatarInitials($emp) {
     }
 
     function viewEmployee(id) {
-        window.location.href = '/employee/view/' + id;
+        const basePath = '<?= $baseUrl ?>';
+        window.location.href = basePath + '/employee/view/' + id;
     }
 
     async function editEmployee(id) {
         try {
-            const response = await fetch('/employee/get/' + id);
+            const basePath = '<?= $baseUrl ?>';
+            const response = await fetch(`${basePath}/employee/get/${id}`);
             const employee = await response.json();
             
             if (employee.error) {
@@ -1085,13 +1184,13 @@ function getAvatarInitials($emp) {
             // Set profile image
             const previewImg = document.getElementById('editPreviewImg');
             if (employee.profile_image) {
-                previewImg.src = '/' + employee.profile_image;
+                previewImg.src = basePath + '/' + employee.profile_image;
             } else {
-                previewImg.src = '/assets/images/default-avatar.png';
+                previewImg.src = basePath + '/assets/images/default-avatar.svg';
             }
             
             // Set form action
-            document.getElementById('editEmployeeForm').action = '/employee/edit/' + id;
+            document.getElementById('editEmployeeForm').action = basePath + '/employee/edit/' + id;
             
             // Show modal
             document.getElementById('editEmployeeModal').classList.add('show');
@@ -1106,7 +1205,7 @@ function getAvatarInitials($emp) {
         document.getElementById('editEmployeeModal').classList.remove('show');
         document.body.style.overflow = '';
         document.getElementById('editEmployeeForm').reset();
-        document.getElementById('editPreviewImg').src = '/assets/images/default-avatar.png';
+        document.getElementById('editPreviewImg').src = '<?= $baseUrl ?>/assets/images/default-avatar.svg';
     }
 
     function previewEditImage(event) {
@@ -1126,7 +1225,8 @@ function getAvatarInitials($emp) {
 
     function deleteEmployee(id) {
         if (confirm('Are you sure you want to delete this employee? This action cannot be undone.')) {
-            fetch('/employee/delete/' + id, {
+            const basePath = '<?= $baseUrl ?>';
+            fetch(`${basePath}/employee/delete/${id}`, {
                 method: 'POST',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
@@ -1184,6 +1284,42 @@ function getAvatarInitials($emp) {
             link.href = qrImg.src;
             link.download = 'employee-qr.png';
             link.click();
+        }
+    }
+
+    async function toggleDeduction(employeeId, currentStatus) {
+        const basePath = '<?= $baseUrl ?>';
+        const newStatus = currentStatus ? 0 : 1;
+        const newStatusText = newStatus ? 'With Deductions' : 'No Deductions';
+
+        try {
+            const response = await fetch(`${basePath}/employee/toggle-deduction/${employeeId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Update the UI
+                const badge = document.querySelector(`.employee-card:has([onclick*="toggleDeduction(${employeeId},"]) .deduction-badge`) ||
+                              document.querySelector(`.deduction-badge[onclick*="toggleDeduction(${employeeId},"]`);
+
+                if (badge) {
+                    badge.className = `deduction-badge ${newStatus ? 'with' : 'without'}`;
+                    badge.innerHTML = `<i class="fas fa-${newStatus ? 'check' : 'times'}-circle"></i> ${newStatusText}`;
+                    badge.setAttribute('onclick', `toggleDeduction(${employeeId}, ${newStatus})`);
+                }
+
+                alert(data.message || 'Deduction status updated successfully');
+            } else {
+                alert('Error: ' + (data.error || 'Failed to update deduction status'));
+            }
+        } catch (error) {
+            console.error('Error toggling deduction:', error);
+            alert('Error: Failed to update deduction status. Please try again.');
         }
     }
 

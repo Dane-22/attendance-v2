@@ -1,5 +1,6 @@
 <?php
 $title = 'Branch Device Login';
+$baseUrl = dirname($_SERVER['SCRIPT_NAME']);
 ob_start();
 ?>
 
@@ -182,7 +183,7 @@ ob_start();
     </div>
     <?php endif; ?>
 
-    <form method="POST" action="/branch/login">
+    <form method="POST" action="<?= $baseUrl ?>/branch/login">
         <div class="form-group">
             <label for="branch_code">Select Branch</label>
             <select id="branch_code" name="branch_code" required>
@@ -211,7 +212,7 @@ ob_start();
     </form>
 
     <div class="back-link">
-        <a href="/login"><i class="fas fa-arrow-left"></i> Back to Admin Login</a>
+        <a href="<?= $baseUrl ?>/login"><i class="fas fa-arrow-left"></i> Back to Admin Login</a>
     </div>
 </div>
 

@@ -34,10 +34,30 @@ class BranchQRController extends Controller {
         ]);
     }
 
-    public function processScan() {
-        // Require JWT token for this endpoint
-        $currentUser = $this->requireJWT();
+    private function parseQRAndGetEmployee($qrData, $branchCode) {
+        // Parse QR data format: JAJR-EMP:id|code|name
+        if (!preg_match('/JAJR-EMP:(\d+)\|([^|]+)\|(.+)/', $qrData, $matches)) {
+            return ['error' => 'Invalid QR code format'];
+        }
 
+        $employeeId = $matches[1];
+        $employeeCode = $matches[2];
+        $employeeName = $matches[3];
+
+        // Verify employee exists and is active
+        $employee = $this->employeeModel->findById($employeeId);
+        if (!$employee) {
+            return ['error' => 'Employee not found'];
+        }
+
+        if ($employee['status'] !== 'Active') {
+            return ['error' => 'Employee is not active'];
+        }
+
+        return ['employee' => $employee];
+    }
+
+    public function previewScan() {
         // Check if branch device is logged in
         if (empty($_SESSION['branch_code'])) {
             header('Content-Type: application/json');
@@ -54,43 +74,31 @@ class BranchQRController extends Controller {
         $qrData = $_POST['qr_data'] ?? '';
         $branchCode = $_SESSION['branch_code'];
 
-        // Parse QR data format: JAJR-EMP:id|code|name
-        if (!preg_match('/JAJR-EMP:(\d+)\|([^|]+)\|(.+)/', $qrData, $matches)) {
+        $result = $this->parseQRAndGetEmployee($qrData, $branchCode);
+        if (isset($result['error'])) {
             header('Content-Type: application/json');
-            echo json_encode(['error' => 'Invalid QR code format']);
+            echo json_encode($result);
             return;
         }
 
-        $employeeId = $matches[1];
-        $employeeCode = $matches[2];
-        $employeeName = $matches[3];
-
-        // Verify employee exists and is active
-        $employee = $this->employeeModel->findById($employeeId);
-        if (!$employee) {
-            header('Content-Type: application/json');
-            echo json_encode(['error' => 'Employee not found']);
-            return;
-        }
-
-        if ($employee['status'] !== 'Active') {
-            header('Content-Type: application/json');
-            echo json_encode(['error' => 'Employee is not active']);
-            return;
-        }
-
+        $employee = $result['employee'];
         $today = date('Y-m-d');
-        $currentTime = date('H:i:s');
 
-        // Check if employee has any attendance record today at any branch
-        $lastAttendance = $this->attendanceModel->getLastTodayByEmployee($employeeId, $today);
+        try {
+            $lastAttendance = $this->attendanceModel->getLastTodayByEmployee($employee['id'], $today);
+        } catch (Exception $e) {
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+            return;
+        }
+
+        // Determine what action will be taken
+        $action = 'check_in'; // default
+        $message = 'Check in ' . $employee['first_name'] . ' ' . $employee['last_name'] . '?';
 
         if ($lastAttendance) {
-            // Employee has attendance today
             if ($lastAttendance['branch_code'] !== $branchCode) {
-                // Employee is at a different branch
                 if (empty($lastAttendance['check_out'])) {
-                    // Employee hasn't checked out from previous branch
                     header('Content-Type: application/json');
                     echo json_encode([
                         'error' => 'Employee must check out from ' . $lastAttendance['branch_code'] . ' before checking in here',
@@ -99,45 +107,111 @@ class BranchQRController extends Controller {
                     ]);
                     return;
                 }
-                // Employee checked out, can check in at new branch
+                // Can check in at new branch
             } else {
-                // Same branch - check if they need to check in or out
+                // Same branch
                 if (empty($lastAttendance['check_out'])) {
-                    // Check out
-                    $this->attendanceModel->updateCheckOut($lastAttendance['id'], $currentTime);
-                    header('Content-Type: application/json');
-                    echo json_encode([
-                        'success' => true,
-                        'action' => 'check_out',
-                        'employee' => [
-                            'id' => $employee['id'],
-                            'name' => $employee['first_name'] . ' ' . $employee['last_name'],
-                            'code' => $employee['employee_code'],
-                            'time' => $currentTime
-                        ]
-                    ]);
-                    return;
+                    $action = 'check_out';
+                    $message = 'Check out ' . $employee['first_name'] . ' ' . $employee['last_name'] . '?';
                 }
-                // Already checked out, create new check-in (multiple sessions allowed)
+                // Already checked out, will create new record (check in)
             }
         }
 
-        // Create new check-in record
-        $data = [
-            'employee_id' => $employeeId,
-            'branch_code' => $branchCode,
-            'date' => $today,
-            'check_in' => $currentTime,
-            'check_out' => null,
-            'status' => 'present',
-            'notes' => 'QR Scan at ' . $branchCode
-        ];
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'preview' => true,
+            'action' => $action,
+            'message' => $message,
+            'employee' => [
+                'id' => $employee['id'],
+                'name' => $employee['first_name'] . ' ' . $employee['last_name'],
+                'code' => $employee['employee_code']
+            ]
+        ]);
+    }
 
-        if ($this->attendanceModel->create($data)) {
+    public function processScan() {
+        // Check if branch device is logged in
+        if (empty($_SESSION['branch_code'])) {
+            error_log('BranchQRController: No branch_code in session');
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Not authenticated - no branch_code in session']);
+            return;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            error_log('BranchQRController: Invalid method ' . $_SERVER['REQUEST_METHOD']);
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Invalid request method: ' . $_SERVER['REQUEST_METHOD']]);
+            return;
+        }
+
+        $qrData = $_POST['qr_data'] ?? '';
+        $branchCode = $_SESSION['branch_code'];
+        error_log('BranchQRController: Processing scan for branch ' . $branchCode . ', QR: ' . substr($qrData, 0, 50));
+
+        $result = $this->parseQRAndGetEmployee($qrData, $branchCode);
+        if (isset($result['error'])) {
+            header('Content-Type: application/json');
+            echo json_encode($result);
+            return;
+        }
+
+        $employee = $result['employee'];
+
+        // Set Philippines timezone
+        date_default_timezone_set('Asia/Manila');
+
+        $today = date('Y-m-d');
+        $currentTime = date('H:i:s');
+        error_log('BranchQRController: Today=' . $today . ', Time=' . $currentTime . ', Employee=' . $employee['id']);
+
+        try {
+            // Check if employee has any attendance record today at any branch
+            $lastAttendance = $this->attendanceModel->getLastTodayByEmployee($employee['id'], $today);
+            error_log('BranchQRController: Last attendance: ' . ($lastAttendance ? json_encode($lastAttendance) : 'none'));
+        } catch (Exception $e) {
+            error_log('BranchQRController: Database error getting attendance: ' . $e->getMessage());
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+            return;
+        }
+
+        // Cross-branch validation: if employee has unchecked attendance at different branch, block
+        if ($lastAttendance && $lastAttendance['branch_code'] !== $branchCode && empty($lastAttendance['check_out'])) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'error' => 'Employee must check out from ' . $lastAttendance['branch_code'] . ' before checking in here',
+                'current_branch' => $lastAttendance['branch_code'],
+                'action_required' => 'checkout'
+            ]);
+            return;
+        }
+
+        // Use unified attendance recording method
+        try {
+            $result = $this->attendanceModel->recordAttendance(
+                $employee['id'],
+                $branchCode,
+                $today,
+                'qr',
+                $currentTime
+            );
+            error_log('BranchQRController: recordAttendance result: ' . json_encode($result));
+        } catch (Exception $e) {
+            error_log('BranchQRController: Database error recording attendance: ' . $e->getMessage());
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+            return;
+        }
+
+        if ($result['success']) {
             header('Content-Type: application/json');
             echo json_encode([
                 'success' => true,
-                'action' => 'check_in',
+                'action' => $result['action'],
                 'employee' => [
                     'id' => $employee['id'],
                     'name' => $employee['first_name'] . ' ' . $employee['last_name'],
@@ -147,7 +221,7 @@ class BranchQRController extends Controller {
             ]);
         } else {
             header('Content-Type: application/json');
-            echo json_encode(['error' => 'Failed to record attendance']);
+            echo json_encode(['error' => $result['error'] ?? 'Failed to record attendance']);
         }
     }
 

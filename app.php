@@ -1,5 +1,9 @@
 <?php
 
+// Load environment variables from .env file (local development)
+require_once __DIR__ . '/core/Dotenv.php';
+Dotenv::load();
+
 session_start();
 
 require_once __DIR__ . '/core/Database.php';
@@ -49,13 +53,14 @@ $router->add('branches/delete/{id}', ['controller' => 'BranchController', 'actio
 // Branch QR Scanner routes
 $router->add('branch/scanner', ['controller' => 'BranchQRController', 'action' => 'scanner']);
 $router->add('branch/scan', ['controller' => 'BranchQRController', 'action' => 'processScan']);
+$router->add('branch/preview', ['controller' => 'BranchQRController', 'action' => 'previewScan']);
 $router->add('branch/logout', ['controller' => 'BranchQRController', 'action' => 'logout']);
 
 // Pages routes (coming soon)
 $router->add('notifications', ['controller' => 'PagesController', 'action' => 'notifications']);
 $router->add('documents', ['controller' => 'PagesController', 'action' => 'documents']);
 $router->add('finance', ['controller' => 'PagesController', 'action' => 'finance']);
-$router->add('finance/payroll', ['controller' => 'PagesController', 'action' => 'payroll']);
+$router->add('finance/payroll', ['controller' => 'PayrollController', 'action' => 'index']);
 $router->add('finance/overtime', ['controller' => 'PagesController', 'action' => 'overtime']);
 $router->add('finance/cash-advance', ['controller' => 'PagesController', 'action' => 'cashAdvance']);
 $router->add('finance/billing', ['controller' => 'PagesController', 'action' => 'billing']);
@@ -70,7 +75,15 @@ $router->add('employee/view/{id}', ['controller' => 'EmployeeController', 'actio
 $router->add('employee/edit/{id}', ['controller' => 'EmployeeController', 'action' => 'edit']);
 $router->add('employee/delete/{id}', ['controller' => 'EmployeeController', 'action' => 'delete']);
 $router->add('employee/get/{id}', ['controller' => 'EmployeeController', 'action' => 'getEmployee']);
+$router->add('employee/toggle-deduction/{id}', ['controller' => 'EmployeeController', 'action' => 'toggleDeduction']);
 $router->add('employee/next-code', ['controller' => 'EmployeeController', 'action' => 'getNextCode']);
+
+// Payroll API routes
+$router->add('api/payroll/calculate', ['controller' => 'PayrollController', 'action' => 'calculate']);
+$router->add('api/payroll/weekly', ['controller' => 'PayrollController', 'action' => 'getWeeklyData']);
+$router->add('api/payroll/export', ['controller' => 'PayrollController', 'action' => 'export']);
+$router->add('api/payroll/payslip', ['controller' => 'PayrollController', 'action' => 'printPayslip']);
+$router->add('api/payroll/week-options', ['controller' => 'PayrollController', 'action' => 'getWeekOptions']);
 
 // Dispatch the request
 $router->dispatch();

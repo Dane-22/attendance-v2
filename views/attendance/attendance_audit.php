@@ -389,6 +389,25 @@ ob_start();
         color: #22c55e;
     }
 
+    .source-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        color: var(--accent-color);
+        font-size: 0.875rem;
+        cursor: help;
+    }
+
+    .source-badge:hover {
+        background: var(--accent-color);
+        color: #000000;
+    }
+
     .table-actions {
         display: flex;
         gap: 8px;
@@ -565,10 +584,21 @@ ob_start();
         padding: 8px;
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
         border: 1px solid var(--border-color);
         background: var(--bg-primary);
         min-height: 80px;
+        max-height: 120px;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .modal-day::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .modal-day::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
     }
 
     .modal-day .day-num {
@@ -631,6 +661,91 @@ ob_start();
 
     .modal-day.other-month {
         opacity: 0.3;
+    }
+
+    /* Session item styles */
+    .session-item {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+        padding: 4px 6px;
+        margin-bottom: 3px;
+        font-size: 0.65rem;
+        border-left: 2px solid transparent;
+        flex-shrink: 0;
+    }
+
+    .session-item.present {
+        border-left-color: #22c55e;
+    }
+
+    .session-item.late {
+        border-left-color: #f97316;
+    }
+
+    .session-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2px;
+    }
+
+    .session-number {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--accent-color);
+        font-size: 0.6rem;
+        font-weight: 700;
+        padding: 1px 4px;
+        border-radius: 3px;
+    }
+
+    .session-status {
+        font-size: 0.6rem;
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-weight: 600;
+    }
+
+    .session-status.present {
+        background: rgba(34, 197, 94, 0.2);
+        color: #22c55e;
+    }
+
+    .session-status.late {
+        background: rgba(249, 115, 22, 0.2);
+        color: #f97316;
+    }
+
+    .session-time {
+        color: var(--text-secondary);
+        font-size: 0.7rem;
+        line-height: 1.2;
+    }
+
+    .session-time .check-in {
+        color: #22c55e;
+    }
+
+    .session-time .check-out {
+        color: #ef4444;
+    }
+
+    .session-branch {
+        color: var(--accent-color);
+        font-size: 0.65rem;
+        margin-top: 2px;
+        opacity: 0.8;
+    }
+
+    .day-total {
+        background: rgba(255, 215, 0, 0.15);
+        color: var(--accent-color);
+        font-size: 0.65rem;
+        padding: 3px 6px;
+        border-radius: 4px;
+        text-align: center;
+        margin-top: 4px;
+        font-weight: 600;
+        border: 1px solid rgba(255, 215, 0, 0.3);
     }
 
     .modal-legend {
@@ -1021,6 +1136,7 @@ ob_start();
                         <th>Time Out</th>
                         <th>Hours</th>
                         <th>Status</th>
+                        <th>Source</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -1039,6 +1155,29 @@ ob_start();
                         <td><?= $record['timeOut'] ?></td>
                         <td><?= $record['hours'] ?></td>
                         <td><span class="status-badge present"><?= $record['status'] ?></span></td>
+                        <td>
+                            <?php
+                            $sourceIcon = '';
+                            $sourceTitle = '';
+                            if (!empty($record['notes'])) {
+                                if (strpos($record['notes'], 'QR Scan') !== false) {
+                                    $sourceIcon = 'fa-qrcode';
+                                    $sourceTitle = 'QR Scan';
+                                } elseif (strpos($record['notes'], 'Manual entry') !== false) {
+                                    $sourceIcon = 'fa-hand-pointer';
+                                    $sourceTitle = 'Manual Entry';
+                                } else {
+                                    $sourceIcon = 'fa-question';
+                                    $sourceTitle = 'Unknown';
+                                }
+                            }
+                            ?>
+                            <?php if ($sourceIcon): ?>
+                            <span class="source-badge" title="<?= htmlspecialchars($record['notes']) ?>">
+                                <i class="fas <?= $sourceIcon ?>"></i>
+                            </span>
+                            <?php endif; ?>
+                        </td>
                         <td>
                             <div class="table-actions">
                                 <button class="table-action-btn"><i class="fas fa-eye"></i></button>
@@ -1142,7 +1281,7 @@ ob_start();
 function exportToExcel() {
     const table = document.querySelector('.attendance-table');
     let csv = [];
-    
+
     // Get headers
     const headers = [];
     table.querySelectorAll('thead th').forEach(th => {
@@ -1151,16 +1290,20 @@ function exportToExcel() {
         }
     });
     csv.push(headers.join(','));
-    
+
     // Get rows
     table.querySelectorAll('tbody tr').forEach(tr => {
         const row = [];
         tr.querySelectorAll('td').forEach((td, index) => {
-            if (index < 7) { // Skip actions column
+            if (index < 8) { // Skip actions column (now index 8)
                 let text = td.textContent.trim();
                 if (index === 0) {
                     // Employee column - get just the name
                     text = td.querySelector('.emp-name')?.textContent || text;
+                } else if (index === 7) {
+                    // Source column - get the icon title or text
+                    const sourceBadge = td.querySelector('.source-badge');
+                    text = sourceBadge ? sourceBadge.getAttribute('title') || 'Unknown' : '';
                 }
                 row.push('"' + text + '"');
             }
@@ -1248,7 +1391,7 @@ function renderEmployeeCalendar(attendanceData) {
     
     for (let day = 1; day <= daysInMonth; day++) {
         const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const record = attendanceData[dateKey];
+        const records = attendanceData[dateKey];
         
         let dayClass = '';
         let dayContent = `<span class="day-num">${day}</span>`;
@@ -1257,16 +1400,55 @@ function renderEmployeeCalendar(attendanceData) {
             dayClass += ' today';
         }
         
-        if (record) {
-            dayClass += ` ${record.status}`;
-            dayContent += `
-                <div class="day-info">
-                    ${record.check_in || '--:--'}<br>
-                    ${record.check_out || '--:--'}<br>
-                    ${record.branch || ''}
-                </div>
-                <span class="status-pill">${record.status}</span>
-            `;
+        if (records && records.length > 0) {
+            // Use status from first record for day styling
+            dayClass += ` ${records[0].status}`;
+
+            // Build content for all records with enhanced styling
+            let recordsHtml = '';
+            let totalMinutes = 0;
+
+            records.forEach((rec, index) => {
+                const sessionNum = index + 1;
+                const hasLate = rec.status === 'late';
+
+                // Calculate hours for this session
+                let sessionMinutes = 0;
+                if (rec.check_in && rec.check_out) {
+                    const checkIn = new Date(`2000-01-01 ${rec.check_in}`);
+                    const checkOut = new Date(`2000-01-01 ${rec.check_out}`);
+                    sessionMinutes = (checkOut - checkIn) / 60000;
+                    if (sessionMinutes > 0) totalMinutes += sessionMinutes;
+                }
+                const hours = Math.floor(sessionMinutes / 60);
+                const mins = Math.round(sessionMinutes % 60);
+                const timeDisplay = sessionMinutes > 0 ? `${hours}h ${mins}m` : '';
+
+                recordsHtml += `
+                    <div class="session-item ${rec.status}">
+                        <div class="session-header">
+                            <span class="session-number">#${sessionNum}</span>
+                            ${hasLate ? '<span class="session-status late">Late</span>' : '<span class="session-status present">Present</span>'}
+                        </div>
+                        <div class="session-time">
+                            <span class="check-in">${rec.check_in || '--:--'}</span> -
+                            <span class="check-out">${rec.check_out || '--:--'}</span>
+                            ${timeDisplay ? `<span style="float:right;opacity:0.7">${timeDisplay}</span>` : ''}
+                        </div>
+                        <div class="session-branch">${rec.branch || ''}</div>
+                    </div>
+                `;
+            });
+
+            dayContent += recordsHtml;
+
+            // Show total hours if multiple sessions
+            if (records.length > 1 && totalMinutes > 0) {
+                const totalHours = (totalMinutes / 60).toFixed(1);
+                dayContent += `<div class="day-total">Total: ${totalHours} hrs</div>`;
+            } else if (records.length === 1) {
+                dayContent += `<span class="status-pill" style="margin-top:4px;display:block;">${records[0].status}</span>`;
+            }
         } else {
             dayClass += ' no-record';
             dayContent += '<span class="status-pill">No Record</span>';

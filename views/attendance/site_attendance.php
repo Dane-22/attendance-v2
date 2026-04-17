@@ -1,6 +1,32 @@
 <?php
 $title = 'Site Attendance';
 ob_start();
+$baseUrl = dirname($_SERVER['SCRIPT_NAME']);
+
+// Check if current user is super_admin
+require_once __DIR__ . '/../../core/JWT.php';
+$isSuperAdmin = false;
+if (isset($_SESSION['jwt_token'])) {
+    $payload = JWT::validate($_SESSION['jwt_token']);
+    if ($payload && isset($payload['role']) && $payload['role'] === 'super_admin') {
+        $isSuperAdmin = true;
+    }
+}
+
+// Helper function to get avatar initials
+function getAvatarInitials($emp) {
+    if (!empty($emp['profile_image'])) {
+        return null;
+    }
+    $initials = '';
+    if (!empty($emp['first_name'])) {
+        $initials .= strtoupper(substr($emp['first_name'], 0, 1));
+    }
+    if (!empty($emp['last_name'])) {
+        $initials .= strtoupper(substr($emp['last_name'], 0, 1));
+    }
+    return $initials ?: '??';
+}
 ?>
 
 <style>
@@ -158,6 +184,62 @@ ob_start();
         border-radius: 12px;
         padding: 20px;
         text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+    }
+
+    .stat-card:hover {
+        border-color: var(--accent-color);
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.05), var(--bg-secondary));
+    }
+
+    .stat-card.active {
+        border-color: var(--accent-color);
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), var(--bg-secondary));
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+    }
+
+    .stat-card .employee-tooltip {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 12px;
+        margin-top: 8px;
+        min-width: 200px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 100;
+        text-align: left;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .stat-card:hover .employee-tooltip,
+    .stat-card.active .employee-tooltip {
+        display: block;
+    }
+
+    .tooltip-item {
+        font-size: 0.75rem;
+        padding: 4px 0;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-secondary);
+    }
+
+    .tooltip-item:last-child {
+        border-bottom: none;
+    }
+
+    .tooltip-more {
+        font-size: 0.7rem;
+        color: var(--accent-color);
+        text-align: center;
+        padding-top: 8px;
     }
 
     .stat-label {
@@ -321,6 +403,23 @@ ob_start();
         color: #fff;
         font-weight: 600;
         font-size: 0.8rem;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .employee-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        display: block;
+    }
+
+    .avatar-initials {
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.8rem;
+        line-height: 1;
     }
 
     .employee-details h4 {
@@ -337,6 +436,19 @@ ob_start();
 
     .employee-details .project-tag {
         color: #fbbf24;
+        font-size: 0.7rem;
+    }
+
+    .employee-details .current-branch {
+        color: var(--accent-color);
+        font-size: 0.75rem;
+        margin-top: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .employee-details .current-branch i {
         font-size: 0.7rem;
     }
 
@@ -537,27 +649,36 @@ ob_start();
 <div class="projects-grid" id="projectsGrid">
     <?php foreach ($branches as $index => $branch): ?>
     <div class="project-card <?= $index === 0 ? 'selected' : '' ?>" 
-         data-branch-code="<?= htmlspecialchars($branch['branch_code']) ?>"
-         onclick="selectProject(this, '<?= htmlspecialchars($branch['branch_code']) ?>')">
-        <div class="project-name"><?= htmlspecialchars($branch['branch_name']) ?></div>
-        <div class="project-desc">Branch Code: <?= htmlspecialchars($branch['branch_code']) ?> - Deploy employees to this project for attendance.</div>
+         data-branch-code="<?= htmlspecialchars($branch['branch_code'] ?? '') ?>"
+         onclick="selectProject(this, '<?= htmlspecialchars($branch['branch_code'] ?? '') ?>')">
+        <div class="project-name"><?= htmlspecialchars($branch['branch_name'] ?? 'Unknown Branch') ?></div>
+        <div class="project-desc">Branch Code: <?= htmlspecialchars($branch['branch_code'] ?? 'N/A') ?> - Deploy employees to this project for attendance.</div>
     </div>
     <?php endforeach; ?>
 </div>
 
 <!-- Stats Section -->
 <div class="stats-grid">
-    <div class="stat-card">
+    <div class="stat-card" onclick="filterByStat('all')" data-stat="all">
         <div class="stat-label">TOTAL WORKERS</div>
         <div class="stat-value" id="statTotal"><?= $totalWorkers ?></div>
+        <div class="employee-tooltip" id="totalTooltip">
+            <div class="tooltip-item">Loading...</div>
+        </div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="filterByStat('present')" data-stat="present">
         <div class="stat-label">PRESENT</div>
         <div class="stat-value" id="statPresent"><?= $present ?></div>
+        <div class="employee-tooltip" id="presentTooltip">
+            <div class="tooltip-item">Loading...</div>
+        </div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="filterByStat('absent')" data-stat="absent">
         <div class="stat-label">ABSENT</div>
         <div class="stat-value" id="statAbsent"><?= $absent ?></div>
+        <div class="employee-tooltip" id="absentTooltip">
+            <div class="tooltip-item">Loading...</div>
+        </div>
     </div>
 </div>
 
@@ -617,7 +738,9 @@ if (window.location.protocol === 'http:' && window.location.hostname !== 'localh
 let currentBranchCode = null;
 let currentEmployees = [];
 let currentFilter = 'all';
-const basePath = window.location.origin;
+const isSuperAdmin = <?= $isSuperAdmin ? 'true' : 'false' ?>;
+<?php $baseUrl = dirname($_SERVER['SCRIPT_NAME']); ?>
+const basePath = '<?= $baseUrl ?>';
 const jwtToken = <?= json_encode($_SESSION['jwt_token'] ?? null) ?>;
 console.log('JWT Token available:', !!jwtToken, 'Token preview:', jwtToken ? jwtToken.substring(0, 20) + '...' : 'none');
 
@@ -701,6 +824,7 @@ function renderEmployees() {
         const rowNum = start + index + 1;
         const initials = (emp.first_name[0] + emp.last_name[0]).toUpperCase();
         const status = emp.attendance_status || 'pending';
+        const profileImage = emp.profile_image ? `${basePath}/${emp.profile_image}` : null;
         
         // Format time from HH:MM:SS to 24-hour format
         const formatTime = (timeStr) => {
@@ -731,9 +855,16 @@ function renderEmployees() {
                 <td>${rowNum}</td>
                 <td>
                     <div class="employee-cell">
-                        <div class="employee-avatar">${initials}</div>
+                        <div class="employee-avatar" data-initials="${initials}">
+                            ${profileImage ?
+                                `<img src="${profileImage}" alt="" onerror="this.style.display='none'; this.parentElement.querySelector('.avatar-initials').style.display='flex';">` +
+                                `<span class="avatar-initials" style="display: none;">${initials}</span>` :
+                                `<span class="avatar-initials">${initials}</span>`
+                            }
+                        </div>
                         <div class="employee-details">
                             <h4>${emp.first_name} ${emp.last_name}</h4>
+                            ${isSuperAdmin && emp.current_branch ? `<p class="current-branch"><i class="fas fa-map-marker-alt"></i> Current Branch: ${emp.current_branch}</p>` : ''}
                         </div>
                     </div>
                 </td>
@@ -789,9 +920,17 @@ function undoLastAction() {
 
 function filterEmployees(filter) {
     currentFilter = filter;
+
+    // Sync filter pills
     document.querySelectorAll('.filter-pill').forEach(pill => {
         pill.classList.toggle('active', pill.dataset.filter === filter);
     });
+
+    // Sync stat cards
+    document.querySelectorAll('.stat-card').forEach(card => {
+        card.classList.toggle('active', card.dataset.stat === filter);
+    });
+
     currentPage = 1;
     renderEmployees();
 }
@@ -850,10 +989,25 @@ function checkoutEmployee(employeeId) {
     markAttendance(employeeId, 'present');
 }
 
+let currentStatFilter = 'all';
+
+function filterByStat(stat) {
+    currentStatFilter = stat;
+
+    // Update active state on cards
+    document.querySelectorAll('.stat-card').forEach(card => {
+        card.classList.toggle('active', card.dataset.stat === stat);
+    });
+
+    // Filter employees
+    filterEmployees(stat);
+}
+
 function updateStats() {
     const date = document.getElementById('attendanceDate').value;
-    
-    fetch(`${basePath}/api/attendance/stats?date=${date}`, {
+    const branchCode = currentBranchCode || '';
+
+    fetch(`${basePath}/api/attendance/stats?date=${date}&branch_code=${branchCode}`, {
         headers: jwtToken ? { 'Authorization': `Bearer ${jwtToken}` } : {}
     })
         .then(response => response.json())
@@ -861,6 +1015,37 @@ function updateStats() {
             document.getElementById('statTotal').textContent = data.totalWorkers;
             document.getElementById('statPresent').textContent = data.present;
             document.getElementById('statAbsent').textContent = data.absent;
+
+            // Update total workers tooltip
+            const totalTooltip = document.getElementById('totalTooltip');
+            if (data.totalWorkers > 0) {
+                totalTooltip.innerHTML = `<div class="tooltip-item">Total: ${data.totalWorkers} registered workers</div>`;
+            } else {
+                totalTooltip.innerHTML = '<div class="tooltip-item">No workers registered</div>';
+            }
+
+            // Update present tooltip
+            const presentTooltip = document.getElementById('presentTooltip');
+            if (data.presentList && data.presentList.length > 0) {
+                let html = '';
+                data.presentList.forEach((emp, index) => {
+                    html += `<div class="tooltip-item">${index + 1}. ${emp.name} - ${emp.time_in}</div>`;
+                });
+                if (data.presentTotal > data.presentList.length) {
+                    html += `<div class="tooltip-more">and ${data.presentTotal - data.presentList.length} more...</div>`;
+                }
+                presentTooltip.innerHTML = html;
+            } else {
+                presentTooltip.innerHTML = '<div class="tooltip-item">No employees present</div>';
+            }
+
+            // Update absent tooltip
+            const absentTooltip = document.getElementById('absentTooltip');
+            if (data.absent > 0) {
+                absentTooltip.innerHTML = `<div class="tooltip-item">${data.absent} employee(s) marked absent</div>`;
+            } else {
+                absentTooltip.innerHTML = '<div class="tooltip-item">No employees absent</div>';
+            }
         });
 }
 

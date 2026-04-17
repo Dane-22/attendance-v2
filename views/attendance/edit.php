@@ -1,11 +1,12 @@
 <?php ob_start(); ?>
+<?php $baseUrl = dirname($_SERVER['SCRIPT_NAME']); ?>
 
 <div class="card">
     <div class="header-actions">
         <h2>Edit Attendance Record</h2>
     </div>
-    
-    <form method="POST" action="/attendance/edit/<?= $record['id'] ?>">
+
+    <form method="POST" action="<?= $baseUrl ?>/attendance/edit/<?= $record['id'] ?>">
         <div class="form-group">
             <label for="employee_id">Employee *</label>
             <select id="employee_id" name="employee_id" required>
@@ -51,7 +52,7 @@
         
         <div class="form-group">
             <button type="submit" class="btn btn-primary">Update Record</button>
-            <a href="/attendance" class="btn btn-secondary">Cancel</a>
+            <a href="<?= $baseUrl ?>/attendance" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
 </div>

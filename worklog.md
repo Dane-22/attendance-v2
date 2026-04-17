@@ -665,3 +665,368 @@ console.log('JWT Token available:', !!jwtToken, 'Token preview:', jwtToken ? jwt
 
 ---
 
+## Bug Fixes & Feature Updates (April 17, 2026)
+
+### 1. Branch Name Fix in Views
+
+**Files:** `views/branch/index.php`, `views/attendance/site_attendance.php`
+
+**Issue:** PHP warnings "Undefined array key 'branch_code'" and "Undefined array key 'branch_name'" appearing on branch listing and attendance pages.
+
+**Root Cause:** SQL query in `models/Branch.php` was aliasing columns incorrectly:
+```php
+SELECT branch_code as code, branch_name as name  // Wrong
+```
+
+**Fix:**
+- Removed column aliases in `models/Branch.php:9`
+```php
+SELECT branch_code, branch_name  // Correct
+```
+- Added null coalescing operators (`??`) in views for defensive coding:
+```php
+<?= htmlspecialchars($branch['branch_code'] ?? 'N/A') ?>
+<?= htmlspecialchars($branch['branch_name'] ?? 'Unknown Branch') ?>
+```
+
+### 2. Employee Branch Assignment Feature
+
+**Migration:** `database/migrations/add_branch_to_employees.sql`
+- Added `branch_name` column to `employees` table
+- Created index `idx_employee_branch` for faster queries
+
+**Files:** `models/Employee.php`, `controllers/AttendanceController.php`
+
+**Feature:** Attendance page now filters employees by their assigned branch when clicking a project/branch card.
+
+**Implementation:**
+```php
+// Get branch name from branch code
+$branch = $this->branchModel->findByCode($branchCode);
+$branchName = $branch ? $branch['branch_name'] : null;
+
+// Get employees assigned to this branch
+if ($branchName) {
+    $employees = $this->employeeModel->findByBranch($branchName);
+    if (empty($employees)) {
+        $employees = $this->employeeModel->findAll(); // Fallback
+    }
+}
+```
+
+**New Method:** `Employee::findByBranch($branchName)` - Returns employees assigned to a specific branch.
+
+### 3. Auto-Update Employee Branch on Check-In
+
+**File:** `models/Attendance.php`
+
+**Feature:** Employee's `branch_name` in the employees table now automatically updates to reflect their most recent check-in location.
+
+**Implementation:**
+- Added `updateEmployeeBranch()` private method (lines 168-189)
+- Called on successful check-in in `recordAttendance()` method (line 234)
+
+**Logic:**
+1. Employee checks in at Branch A → `employees.branch_name` = "Branch A"
+2. Employee checks out at Branch A → No change (still "Branch A")
+3. Employee checks in at Branch B → `employees.branch_name` = "Branch B" (updated!)
+
+**SQL in updateEmployeeBranch():**
+```sql
+SELECT branch_name FROM branches WHERE branch_code = :branch_code
+UPDATE employees SET branch_name = :branch_name WHERE id = :employee_id
+```
+
+This ensures the attendance page always shows employees at their most recent work location.
+
+### 4. Finance Layout Update
+
+**File:** `views/finance/finance_layout.php`
+
+**Change:** Added proper nested layout rendering with output buffering to support main layout wrapper.
+
+```php
+$innerContent = $content;
+ob_start();
+// ... finance layout content ...
+$content = ob_get_clean();
+require __DIR__ . '/../layouts/main.php';
+```
+
+---
+
+## Payroll System Implementation (April 17, 2026)
+
+### Summary
+Implemented a complete payroll calculation system with weekly payroll reports, employee payroll processing, and export functionality.
+
+### Files Created
+
+#### PayrollController (`controllers/PayrollController.php`)
+- `index()` - Main payroll page with branch filter and week selection
+- `calculate()` - Calculate payroll for a week and branch
+- `getWeeklyData()` - Get payroll data for a specific week (saved or calculated)
+- `export()` - Export payroll to CSV/Excel format
+- `printPayslip()` - Generate payslip for individual employee
+- `getWeekOptions()` - Get week options for year/month selection
+
+### Routes Added (`app.php`)
+```php
+// Payroll routes
+$router->add('finance/payroll', ['controller' => 'PayrollController', 'action' => 'index']);
+$router->add('api/payroll/calculate', ['controller' => 'PayrollController', 'action' => 'calculate']);
+$router->add('api/payroll/weekly', ['controller' => 'PayrollController', 'action' => 'getWeeklyData']);
+$router->add('api/payroll/export', ['controller' => 'PayrollController', 'action' => 'export']);
+$router->add('api/payroll/payslip', ['controller' => 'PayrollController', 'action' => 'printPayslip']);
+$router->add('api/payroll/week-options', ['controller' => 'PayrollController', 'action' => 'getWeekOptions']);
+```
+
+### Payroll Features
+- **Weekly Payroll Calculation**: Monday-Saturday work week
+- **Automatic Deductions**: SSS, PhilHealth, Pag-IBIG contributions
+- **Performance Allowance**: Configurable per employee
+- **Daily Rate Based**: Calculates based on days worked
+- **Branch Filtering**: View payroll by branch
+- **CSV Export**: Export payroll data to Excel
+- **Payslip Generation**: Individual employee payslips
+
+---
+
+## Attendance Audit & Site Attendance Enhancements (April 17, 2026)
+
+### Attendance Audit Page Updates (`views/attendance/attendance_audit.php`)
+
+#### Source Badge System
+- Added source badges to show attendance entry method (QR Scan, Manual Entry)
+- Hover tooltip showing full notes/details
+- Updated export function to include Source column
+
+#### Modal Calendar Improvements
+- Enhanced day modal with scrollable session list
+- Session items with color-coded status (green=present, orange=late)
+- Session number badges, check-in/check-out times, branch names
+- Total hours calculation for multi-session days
+
+### Site Attendance Page Updates (`views/attendance/site_attendance.php`)
+
+#### Super Admin Features
+- Added super admin detection using JWT validation
+- Current branch display for each employee (super admin only)
+
+#### Interactive Stat Cards
+- Clickable stat cards for filtering (Total/Present/Absent)
+- Hover tooltips showing employee lists
+- Active state styling with golden accent
+
+---
+
+## Ngrok Database Connection Fix (April 17, 2026)
+
+### Issue
+Database connection failed when using ngrok for testing with MySQL 8.4+ authentication issues.
+
+### Solution
+Added ngrok detection to database connection files to use root user for testing:
+
+**`config/database.php` and `conn/db_connection.php`:**
+```php
+$isLocal = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1']) ||
+           strpos($_SERVER['SERVER_NAME'] ?? '', 'localhost') !== false ||
+           strpos($_SERVER['HTTP_HOST'] ?? '', 'ngrok') !== false;
+```
+
+---
+
+## Branch Management Fixes (April 17, 2026)
+
+### Branch Index Page (`views/branch/index.php`)
+- Fixed null handling for branch codes and names
+- Fixed edit/delete URLs to use dynamic base paths
+- Added proper null checking for status display
+
+### Employee Model Updates (`models/Employee.php`)
+- Added `findByBranch()` method for branch-based employee queries
+
+### Finance Layout Fix (`views/finance/finance_layout.php`)
+- Fixed nested content rendering with proper output buffering
+
+---
+
+## Employee Schema Query Fixes (April 17, 2026)
+
+### Summary
+Reviewed and fixed all project files that reference the `employees` table to ensure compatibility with the updated schema. Fixed column name mismatches and added missing fields to queries.
+
+### Issues Found
+
+**1. Column Name Mismatch: `has_deductions` vs `has_deduction`**
+The database column was named `has_deduction` (singular), but the code was using `has_deductions` (plural).
+
+**2. Missing Columns in UPDATE Query**
+The `Employee::update()` method was not updating the new schema columns: `middle_name`, `status`, `daily_rate`, `has_deduction`, `profile_image`.
+
+### Files Modified
+
+#### `models/Employee.php`
+- **Line 23**: Fixed `has_deductions` → `has_deduction` in `create()` method
+- **Lines 50-87**: Updated `update()` method to include all new columns:
+  ```php
+  $query = 'UPDATE employees SET
+      employee_code = :employee_code,
+      first_name = :first_name,
+      middle_name = :middle_name,
+      last_name = :last_name,
+      email = :email,
+      department = :department,
+      position = :position,
+      status = :status,
+      daily_rate = :daily_rate,
+      has_deduction = :has_deduction';
+  ```
+  - Added conditional `profile_image` update
+  - Added proper parameter binding for all new fields
+
+#### `controllers/EmployeeController.php`
+- **Line 53**: Fixed `has_deductions` → `has_deduction` in `create()` handler
+- **Line 110**: Fixed `has_deductions` → `has_deduction` in `edit()` handler
+
+#### `views/employee/employee_list.php`
+- **Lines 391-393**: Fixed display field from `has_deductions` to `has_deduction`
+- **Line 476**: Fixed checkbox name in add form: `name="has_deduction"`
+- **Line 588**: Fixed checkbox ID/name in edit form: `id="edit_has_deduction" name="has_deduction"`
+- **Line 1083**: Fixed JavaScript reference: `employee.has_deduction`
+
+### Verification
+- Verified no remaining `has_deductions` references in the codebase
+- Confirmed `core/Model.php` uses `SELECT *` queries (automatically compatible with schema changes)
+- All JOIN queries in `Attendance.php` reference correct employee columns
+
+### Compatibility Notes
+The following model methods automatically work with the new schema:
+- `Employee::findAll()` - Uses `SELECT *`
+- `Employee::findById()` - Uses `SELECT *`
+- `Employee::findByEmail()` - Uses `SELECT *`
+- `Employee::findByEmployeeCode()` - Uses `SELECT *`
+- `Employee::search()` - Searches across name/code/email fields
+- All `Attendance` model JOINs - Reference employees table correctly
+
+---
+
+## Payroll Module Implementation (April 17, 2026)
+
+### Summary
+Implemented a complete payroll system for weekly salary computation with SSS, PhilHealth, and Pag-IBIG deductions.
+
+### New Files Created
+
+#### `controllers/PayrollController.php`
+- `index()` - Main payroll page with branch/week selection
+- `calculate()` - Calculate weekly payroll for branch employees  
+- `getWeeklyData()` - Fetch or calculate payroll data
+- `export()` - Export payroll to CSV
+- `printPayslip()` - Generate payslip for employee
+- `getWeekOptions()` - Get available week options for year/month
+
+### Features
+
+**Payroll Calculation:**
+- Weekly payroll (Monday-Saturday)
+- Daily rate × Days worked = Basic Pay
+- Performance allowance support
+- Automatic government deductions:
+  - SSS contribution
+  - PhilHealth contribution  
+  - Pag-IBIG (HDMF) contribution
+- Net Pay = Gross Pay - Total Deductions
+
+**Export:**
+- CSV export with UTF-8 BOM
+- Filename: `payroll_{branchCode}_week{number}_{date}.csv`
+
+### Attendance & Branch Updates (April 17, 2026)
+
+#### Employee Branch Assignment
+**File:** `models/Attendance.php`
+- Added `updateEmployeeBranch()` - Updates employee's branch_name when they check in
+- Called during `recordAttendance()` when check-in is recorded
+
+**File:** `controllers/AttendanceController.php`
+- Modified `getEmployeesByBranch()` to get employees assigned to specific branch
+- Falls back to all employees if no branch assignment exists
+
+#### UI Safety Updates
+**Files:** `views/attendance/site_attendance.php`, `views/branch/index.php`
+- Added null coalescing (`??`) operators for safe array access
+- Prevents errors when branch data fields are missing
+
+**File:** `models/Branch.php`
+- Updated `findAll()` to select specific columns instead of `SELECT *`
+
+#### Finance Layout Update
+**File:** `views/finance/finance_layout.php`
+- Fixed layout nesting using output buffering (`ob_start()` / `ob_get_clean()`)
+- Properly integrates with main layout system
+
+---
+
+## Attendance Interface JWT Authentication (April 17, 2026)
+
+### Summary
+Enhanced the attendance interface with proper JWT authentication for API endpoints and improved button logic for time in/out actions.
+
+### Changes Made
+
+#### 1. JWT Token Integration (`views/attendance/site_attendance.php`)
+**Problem:** API calls returning 401 Unauthorized errors.
+
+**Solution:**
+- Exposed JWT token from PHP session to JavaScript:
+```php
+const jwtToken = <?= json_encode($_SESSION['jwt_token'] ?? null) ?>;
+console.log('JWT Token available:', !!jwtToken, 'Token preview:', jwtToken ? jwtToken.substring(0, 20) + '...' : 'none');
+```
+
+- Added Authorization header to all API fetch calls:
+```javascript
+fetch(`${basePath}/api/attendance/employees?branch_code=${code}&date=${date}`, {
+    headers: jwtToken ? { 'Authorization': `Bearer ${jwtToken}` } : {}
+})
+```
+
+**API Endpoints Updated:**
+- `GET /api/attendance/employees`
+- `GET /api/attendance/stats`
+- `POST /api/attendance/mark`
+
+#### 2. Attendance Button Logic Update
+**File:** `views/attendance/site_attendance.php`
+
+**New Behavior:**
+| Employee State | Buttons Shown |
+|---------------|-----------------|
+| No check-in/check-out | Mark Absent + Time In |
+| Checked in only | Time Out |
+| Checked out | Time In |
+
+**Implementation:**
+```javascript
+${!emp.check_in && !emp.check_out ?
+    `<button class="btn-pill btn-absent" onclick="markAttendance(${emp.id}, 'absent')">Mark Absent</button>
+     <button class="btn-pill btn-timein" onclick="markAttendance(${emp.id}, 'present')">Time In</button>` :
+    !emp.check_out ?
+        `<button class="btn-pill btn-checkout" onclick="checkoutEmployee(${emp.id})">Time Out</button>` :
+        `<button class="btn-pill btn-timein" onclick="markAttendance(${emp.id}, 'present')">Time In</button>`
+}
+```
+
+#### 3. Checkout Function
+Added `checkoutEmployee()` function that calls `markAttendance()` with 'present' status, triggering the backend checkout logic.
+
+### Git Commits
+- `dc12984` - enhance the attendance interfaceeeeee
+- `f4a2596` - enhance the attendance interfaceeeeee
+- `2fa56bc` - enhance the attendance interface
+- `cd75c17` - enhance the attendance interface
+- `87ec6bb` - Set Token to all API endpoint
+
+---
