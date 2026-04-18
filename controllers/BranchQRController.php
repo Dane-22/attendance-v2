@@ -37,13 +37,18 @@ class BranchQRController extends Controller {
     private function parseQRAndGetEmployee($qrData, $branchCode) {
         $extractedCode = null;
 
+        // Log raw QR data before any processing
+        error_log('BranchQRController: RAW QR data received: [' . $qrData . ']');
+        error_log('BranchQRController: RAW QR data length: ' . strlen($qrData));
+        error_log('BranchQRController: RAW QR data hex: ' . bin2hex($qrData));
+
         // Trim whitespace and newlines that QR scanners often include
         $qrData = trim($qrData);
-        error_log('BranchQRController: Parsing QR data: ' . substr($qrData, 0, 100));
+        error_log('BranchQRController: Trimmed QR data: [' . substr($qrData, 0, 100) . ']');
 
-        // Check if V1 URL format (case-insensitive)
+        // Check if V1 URL format (case-insensitive, flexible matching)
         $lowerQrData = strtolower($qrData);
-        if (strpos($lowerQrData, 'http://') === 0 || strpos($lowerQrData, 'https://') === 0) {
+        if (strpos($lowerQrData, 'http://') === 0 || strpos($lowerQrData, 'https://') === 0 || strpos($lowerQrData, '://') !== false) {
             error_log('BranchQRController: Detected V1 URL format');
             $urlParts = parse_url($qrData);
             error_log('BranchQRController: URL parts: ' . json_encode($urlParts));
@@ -61,6 +66,12 @@ class BranchQRController extends Controller {
         elseif (preg_match('/JAJR-EMP:(\d+)\|([^|]+)\|(.+)/', $qrData, $matches)) {
             error_log('BranchQRController: Detected V2 text format');
             $extractedCode = $matches[2];
+        }
+
+        // Fallback: try to extract emp_code from any string with regex
+        if (empty($extractedCode) && preg_match('/emp_code[=:]([^&\s|]+)/i', $qrData, $matches)) {
+            error_log('BranchQRController: Fallback regex extracted emp_code: ' . $matches[1]);
+            $extractedCode = trim(urldecode($matches[1]));
         }
 
         if (empty($extractedCode)) {
