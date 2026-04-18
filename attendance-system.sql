@@ -110,7 +110,7 @@ INSERT INTO `employees` (`id`, `employee_code`, `first_name`, `middle_name`, `la
 (78, 'W0061', 'FRANKIE', NULL, 'PADILLA', 'frankie.padilla@example.com', 'Operations', 'Worker', NULL, 'Active', '500.00', 0, NULL, '2026-04-16 16:33:09', '2026-04-16 16:42:17', NULL, '0.00', 0, 21),
 (79, 'W0062', 'ROMEO', '', 'GURION', 'romeo.gurion@example.com', 'Operations', 'Worker', NULL, 'Active', '550.00', 0, 'profile_69d5ff1d4c6693.09123495.png', '2026-04-16 16:33:09', '2026-04-16 16:42:17', NULL, '0.00', 0, 10),
 (80, 'ADMIN-2026-0003', 'Charisse', 'Abaya', 'Laureaga', 'charisse@gmail.com', 'Administration', 'Admin', NULL, 'Active', '600.00', 0, NULL, '2026-04-16 16:33:09', '2026-04-16 16:33:09', NULL, '0.00', 0, 33),
-(81, 'ADMIN-2026-0004', 'Marjorie', '', 'Garcia', 'garcia@gmail.com', 'Administration', 'Admin', NULL, 'Active', '600.00', 0, NULL, '2026-04-16 16:33:09', '2026-04-16 16:33:09', NULL, '0.00', 0, 33),
+(81, 'ADMIN-2026-0004', 'Marjorie', '', 'Garcia', 'garcia@gmail.com', 'Administration', 'Admin', NULL, 'Active', '600.00', 0, NULL, '2026-04-16 16:33:09', '2026-04-18 14:44:22', NULL, '0.00', 0, 5),
 (82, 'ENG-2026-0007', 'Earl Cleint', 'Ordono', 'Nisperos', 'nisperos@gmail.com', 'Engineering', 'Engineer', NULL, 'Active', '600.00', 0, NULL, '2026-04-16 16:33:09', '2026-04-16 16:33:09', NULL, '0.00', 0, 21),
 (83, 'IT-2026-01', 'Daniel ', 'Obaldo', 'Rillera', 'danrillera.va@gmail.com', 'IT', 'Developer', NULL, 'Active', '600.00', 0, NULL, '2026-04-16 16:33:09', '2026-04-16 16:33:09', NULL, '0.00', 0, 33),
 (84, 'IT-2026-02', 'Prince Christiane', 'Borja', 'Tolentino', 'tolentinochristian89@gmail.com', 'IT', 'Developer', NULL, 'Active', '600.00', 0, NULL, '2026-04-16 16:33:09', '2026-04-16 16:33:09', NULL, '0.00', 0, 33),
