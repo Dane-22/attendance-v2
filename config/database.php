@@ -6,7 +6,8 @@
 // Detect if running on localhost/WAMP or ngrok
 $isLocal = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1']) ||
            strpos($_SERVER['SERVER_NAME'] ?? '', 'localhost') !== false ||
-           strpos($_SERVER['HTTP_HOST'] ?? '', 'ngrok') !== false;
+           strpos($_SERVER['HTTP_HOST'] ?? '', 'ngrok') !== false ||
+           strpos($_SERVER['HTTP_HOST'] ?? '', 'attendances.xandree.com') !== false;
 
 return [
     'host' => getenv('DB_HOST') ?: 'localhost',
