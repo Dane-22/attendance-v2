@@ -141,6 +141,12 @@ class Employee extends Model {
         return $stmt->fetch();
     }
 
+    public function getAllEmployeeCodes() {
+        $query = 'SELECT id, employee_code, first_name, last_name FROM ' . $this->table . ' ORDER BY employee_code';
+        $stmt = $this->db->query($query);
+        return $stmt->fetchAll();
+    }
+
     public function countAll() {
         $query = 'SELECT COUNT(*) FROM ' . $this->table;
         $stmt = $this->db->query($query);

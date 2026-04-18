@@ -70,13 +70,22 @@ class BranchQRController extends Controller {
 
         // Normalize to uppercase (V1 codes like E0006 are uppercase)
         $extractedCode = strtoupper($extractedCode);
-        error_log('BranchQRController: Looking up employee with code: [' . $extractedCode . ']');
+        error_log('BranchQRController: Extracted code (normalized): [' . $extractedCode . ']');
+        error_log('BranchQRController: Code length: ' . strlen($extractedCode));
+        error_log('BranchQRController: Code bytes: ' . bin2hex($extractedCode));
 
         // Find employee by employee_code (case-insensitive)
         $employee = $this->employeeModel->findByEmployeeCodeCI($extractedCode);
         if (!$employee) {
-            error_log('BranchQRController: Employee not found with code: [' . $extractedCode . ']');
-            return ['error' => 'Employee not found'];
+            error_log('BranchQRController: Employee NOT FOUND with code: [' . $extractedCode . ']');
+            // Try exact match as fallback for debugging
+            $exactMatch = $this->employeeModel->findByEmployeeCode($extractedCode);
+            error_log('BranchQRController: Exact match result: ' . ($exactMatch ? 'FOUND' : 'NOT FOUND'));
+            // List all employee codes for debugging
+            $allCodes = $this->employeeModel->getAllEmployeeCodes();
+            $codesList = array_map(function($e) { return $e['employee_code']; }, $allCodes);
+            error_log('BranchQRController: All employee codes in DB: ' . implode(', ', $codesList));
+            return ['error' => 'Employee not found (code: ' . $extractedCode . ', available: ' . implode(', ', array_slice($codesList, 0, 5)) . '...)'];
         }
 
         error_log('BranchQRController: Found employee: ' . $employee['first_name'] . ' ' . $employee['last_name'] . ', branch_name: ' . ($employee['branch_name'] ?? 'NULL'));
