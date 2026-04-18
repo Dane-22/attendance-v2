@@ -73,11 +73,21 @@ class BranchQRController extends Controller {
         // Find employee by employee_code
         $employee = $this->employeeModel->findByEmployeeCode($extractedCode);
         if (!$employee) {
+            error_log('BranchQRController: Employee not found with code: [' . $extractedCode . ']');
             return ['error' => 'Employee not found'];
         }
 
-        // Validate employee is assigned to current branch
-        if ($employee['branch_code'] !== $branchCode) {
+        error_log('BranchQRController: Found employee: ' . $employee['first_name'] . ' ' . $employee['last_name'] . ', branch_name: ' . ($employee['branch_name'] ?? 'NULL'));
+
+        // Look up current branch to get its name
+        $currentBranch = $this->branchModel->findByCode($branchCode);
+        if (!$currentBranch) {
+            return ['error' => 'Invalid branch session'];
+        }
+
+        // Validate employee is assigned to current branch (compare branch_name)
+        if ($employee['branch_name'] !== $currentBranch['branch_name']) {
+            error_log('BranchQRController: Branch mismatch - Employee: ' . $employee['branch_name'] . ', Current: ' . $currentBranch['branch_name']);
             return ['error' => 'Employee not assigned to this branch'];
         }
 
