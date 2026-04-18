@@ -1,6 +1,7 @@
 <?php
 $title = 'Branch QR Scanner';
 $baseUrl = dirname($_SERVER['SCRIPT_NAME']);
+$baseUrl = ($baseUrl === '/' || $baseUrl === '\\') ? '' : $baseUrl;
 ob_start();
 ?>
 
