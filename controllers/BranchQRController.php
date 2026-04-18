@@ -35,19 +35,34 @@ class BranchQRController extends Controller {
     }
 
     private function parseQRAndGetEmployee($qrData, $branchCode) {
-        // Parse QR data format: JAJR-EMP:id|code|name
-        if (!preg_match('/JAJR-EMP:(\d+)\|([^|]+)\|(.+)/', $qrData, $matches)) {
-            return ['error' => 'Invalid QR code format'];
+        $extractedCode = null;
+
+        // Check if V1 URL format (starts with http:// or https://)
+        if (strpos($qrData, 'http://') === 0 || strpos($qrData, 'https://') === 0) {
+            $urlParts = parse_url($qrData);
+            if (isset($urlParts['query'])) {
+                parse_str($urlParts['query'], $params);
+                $extractedCode = $params['emp_code'] ?? null;
+            }
+        }
+        // Check if V2 text format: JAJR-EMP:id|code|name
+        elseif (preg_match('/JAJR-EMP:(\d+)\|([^|]+)\|(.+)/', $qrData, $matches)) {
+            $extractedCode = $matches[2];
         }
 
-        $employeeId = $matches[1];
-        $employeeCode = $matches[2];
-        $employeeName = $matches[3];
+        if (empty($extractedCode)) {
+            return ['error' => 'Invalid QR code format. Expected URL with emp_code or JAJR-EMP: format'];
+        }
 
-        // Verify employee exists and is active
-        $employee = $this->employeeModel->findById($employeeId);
+        // Find employee by employee_code
+        $employee = $this->employeeModel->findByEmployeeCode($extractedCode);
         if (!$employee) {
             return ['error' => 'Employee not found'];
+        }
+
+        // Validate employee is assigned to current branch
+        if ($employee['branch_code'] !== $branchCode) {
+            return ['error' => 'Employee not assigned to this branch'];
         }
 
         if ($employee['status'] !== 'Active') {
