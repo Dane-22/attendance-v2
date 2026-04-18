@@ -20,7 +20,7 @@ class Employee extends Model {
     }
 
     public function create($data) {
-        $fields = ['employee_code', 'first_name', 'middle_name', 'last_name', 'email', 'department', 'position', 'status', 'daily_rate', 'has_deduction'];
+        $fields = ['employee_code', 'first_name', 'middle_name', 'last_name', 'email', 'department', 'position', 'status', 'daily_rate', 'has_deduction', 'performance_allowance'];
         $placeholders = [];
         $values = [];
 
@@ -58,7 +58,8 @@ class Employee extends Model {
                   position = :position,
                   status = :status,
                   daily_rate = :daily_rate,
-                  has_deduction = :has_deduction';
+                  has_deduction = :has_deduction,
+                  performance_allowance = :performance_allowance';
 
         if (isset($data['profile_image'])) {
             $query .= ', profile_image = :profile_image';
@@ -78,6 +79,7 @@ class Employee extends Model {
         $status = $data['status'] ?? 'Active';
         $daily_rate = $data['daily_rate'] ?? 0;
         $has_deduction = $data['has_deduction'] ?? 1;
+        $performance_allowance = $data['performance_allowance'] ?? 0;
 
         $stmt->bindParam(':id', $id);
         $stmt->bindParam(':employee_code', $employee_code);
@@ -90,6 +92,7 @@ class Employee extends Model {
         $stmt->bindParam(':status', $status);
         $stmt->bindParam(':daily_rate', $daily_rate);
         $stmt->bindParam(':has_deduction', $has_deduction);
+        $stmt->bindParam(':performance_allowance', $performance_allowance);
 
         if (isset($data['profile_image'])) {
             $profile_image = $data['profile_image'];

@@ -1,5 +1,60 @@
 <?php
 
+// Start output buffering to prevent PHP errors from breaking API responses
+ob_start();
+
+// Global error handler to catch fatal errors and return JSON for API routes
+set_error_handler(function($severity, $message, $file, $line) {
+    // Check if this is an API request
+    $isApiRequest = isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/api/') !== false;
+    
+    if ($isApiRequest) {
+        // Clean any output that might have been generated
+        if (ob_get_length()) {
+            ob_clean();
+        }
+        
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'error' => 'PHP Error: ' . $message,
+            'file' => basename($file),
+            'line' => $line
+        ]);
+        exit;
+    }
+    
+    // For non-API requests, use default error handling
+    return false;
+});
+
+// Catch fatal errors
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        // Check if this is an API request
+        $isApiRequest = isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/api/') !== false;
+        
+        if ($isApiRequest) {
+            // Clean any output that might have been generated
+            if (ob_get_length()) {
+                ob_clean();
+            }
+            
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'error' => 'Fatal Error: ' . $error['message'],
+                'file' => basename($error['file']),
+                'line' => $error['line']
+            ]);
+            exit;
+        }
+    }
+});
+
 // Load environment variables from .env file (local development)
 require_once __DIR__ . '/core/Dotenv.php';
 Dotenv::load();
@@ -57,7 +112,13 @@ $router->add('branch/preview', ['controller' => 'BranchQRController', 'action' =
 $router->add('branch/logout', ['controller' => 'BranchQRController', 'action' => 'logout']);
 
 // Pages routes (coming soon)
-$router->add('notifications', ['controller' => 'PagesController', 'action' => 'notifications']);
+$router->add('notifications', ['controller' => 'NotificationController', 'action' => 'index']);
+
+// Notification API routes
+$router->add('api/notifications/count', ['controller' => 'NotificationController', 'action' => 'getUnreadCount']);
+$router->add('api/notifications/recent', ['controller' => 'NotificationController', 'action' => 'getRecent']);
+$router->add('api/notifications/mark-read/{id}', ['controller' => 'NotificationController', 'action' => 'markAsRead']);
+$router->add('api/notifications/mark-all-read', ['controller' => 'NotificationController', 'action' => 'markAllAsRead']);
 $router->add('documents', ['controller' => 'PagesController', 'action' => 'documents']);
 $router->add('finance', ['controller' => 'PagesController', 'action' => 'finance']);
 $router->add('finance/payroll', ['controller' => 'PayrollController', 'action' => 'index']);

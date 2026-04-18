@@ -90,6 +90,54 @@ class AttendanceController extends Controller {
         $this->jsonResponse(['employees' => $employees]);
     }
 
+    /**
+     * Send attendance notification to all admins
+     */
+    private function sendAttendanceNotification($employeeId, $branchCode, $status) {
+        require_once __DIR__ . '/../models/Notification.php';
+        require_once __DIR__ . '/../models/Employee.php';
+        require_once __DIR__ . '/../models/Branch.php';
+        require_once __DIR__ . '/../models/Admin.php';
+        
+        $notificationModel = new Notification();
+        $employeeModel = new Employee();
+        $branchModel = new Branch();
+        $adminModel = new Admin();
+        
+        $employee = $employeeModel->findById($employeeId);
+        $branch = $branchCode ? $branchModel->findByCode($branchCode) : null;
+        
+        if (!$employee) return;
+        
+        $employeeName = $employee['first_name'] . ' ' . $employee['last_name'];
+        $branchName = $branch ? $branch['branch_name'] : 'Unknown Site';
+        $time = date('g:i A');
+        
+        // Determine notification content based on status
+        if ($status === 'late') {
+            $title = 'Late Check-in';
+            $message = "{$employeeName} was late for check-in at {$branchName}";
+        } else {
+            $title = 'New Attendance Record';
+            $message = "{$employeeName} checked in at {$time} - {$branchName}";
+        }
+        
+        // Get all admin users to notify
+        $admins = $adminModel->findAll();
+        
+        foreach ($admins as $admin) {
+            $notificationModel->create([
+                'recipient_type' => 'admin',
+                'recipient_id' => $admin['id'],
+                'type' => 'attendance',
+                'title' => $title,
+                'message' => $message,
+                'link' => '/attendance',
+                'is_read' => false
+            ]);
+        }
+    }
+
     public function markAttendance() {
         $currentUser = $this->requireJWT();
 
@@ -122,6 +170,12 @@ class AttendanceController extends Controller {
 
             if ($result['success']) {
                 $message = $result['action'] === 'check_out' ? 'Check-out recorded' : 'Check-in recorded';
+                
+                // Send notification for check-in (not check-out)
+                if ($result['action'] === 'check_in') {
+                    $this->sendAttendanceNotification($employeeId, $branchCode, $result['status'] ?? 'present');
+                }
+                
                 $this->jsonResponse(['success' => true, 'message' => $message]);
             } else {
                 $this->jsonResponse(['error' => $result['error'] ?? 'Failed to record attendance'], 500);
@@ -356,6 +410,8 @@ class AttendanceController extends Controller {
                 
                 if ($this->attendanceModel->create($data)) {
                     $success++;
+                    // Send notification for each marked attendance
+                    $this->sendAttendanceNotification($employeeId, null, $status);
                 } else {
                     $failed++;
                 }

@@ -1030,3 +1030,80 @@ Added `checkoutEmployee()` function that calls `markAttendance()` with 'present'
 - `87ec6bb` - Set Token to all API endpoint
 
 ---
+
+## Employee Performance Allowance & Client-Side Image Compression (April 17, 2026)
+
+### Summary
+Added Performance Allowance field to employee forms and implemented client-side image compression to fix large file upload errors.
+
+### Performance Allowance Field
+
+**Files Modified:**
+
+#### `models/Employee.php`
+- **Line 23**: Added `performance_allowance` to fields array in `create()` method
+- **Line 62**: Added `performance_allowance` column to UPDATE query in `update()` method
+- **Line 82, 95**: Added parameter binding for `performance_allowance`
+
+#### `controllers/EmployeeController.php`
+- **Line 92**: Added `performance_allowance` to create POST data array
+- **Line 151**: Added `performance_allowance` to edit POST data array
+
+#### `views/employee/employee_list.php`
+- **Add Employee Modal (lines 498-501)**: Added Performance Allowance input field
+- **Edit Employee Modal (lines 614-617)**: Added Performance Allowance input with ID `edit_performance_allowance`
+- **JavaScript (line 1190)**: Added population of performance_allowance in `editEmployee()` function
+
+**Database Schema:**
+- Column `performance_allowance` already exists as `decimal(10,2)` with default `0.00`
+
+### Client-Side Image Compression
+
+**Problem:** Large images (>upload_max_filesize) were rejected by PHP before reaching the server-side compression code.
+
+**Solution:** Implemented JavaScript-based image compression using HTML5 Canvas before form submission.
+
+**Files Modified:**
+
+#### `views/employee/employee_list.php`
+
+**New Function: `compressImageClientSide()` (lines 1220-1276)**
+```javascript
+function compressImageClientSide(file, maxWidth = 1200, maxSizeKB = 500, quality = 0.85)
+```
+- Resizes image to max 1200px width
+- Iteratively reduces JPEG quality until file is under 500KB
+- Returns compressed blob and data URL for preview
+
+**Updated: `previewImage()` for Add Modal (lines 1152-1206)**
+- Checks if file is already under 500KB (passes through unchanged)
+- Shows compression progress message
+- Displays compression result: "Compressed from 5.2MB to 487KB ✓"
+- Falls back to original file if compression fails
+
+**Updated: `previewEditImage()` for Edit Modal (lines 1281-1335)**
+- Same compression logic for edit form
+- Updates preview with compressed image
+- Visual feedback with color-coded status messages
+
+**Form Submission Interception (lines 1208-1237, 1337-1366)**
+```javascript
+document.getElementById('addEmployeeForm').addEventListener('submit', function(e) {
+    if (compressedAddImageBlob) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        formData.delete('profile_image');
+        formData.append('profile_image', compressedAddImageBlob, 'compressed_profile.jpg');
+        // Submit via fetch API
+    }
+});
+```
+
+**Features:**
+- Automatic compression for files >500KB
+- Real-time compression status feedback
+- Maintains original file if compression fails
+- Works for both Add and Edit employee modals
+- Prevents PHP upload_max_filesize errors
+
+---

@@ -20,6 +20,44 @@ class EmployeeController extends Controller {
         ]);
     }
 
+    /**
+     * Send employee-related notification to all admins
+     */
+    private function sendEmployeeNotification($action, $data) {
+        require_once __DIR__ . '/../models/Notification.php';
+        require_once __DIR__ . '/../models/Admin.php';
+        
+        $notificationModel = new Notification();
+        $adminModel = new Admin();
+        
+        $employeeName = $data['first_name'] . ' ' . $data['last_name'];
+        
+        if ($action === 'create') {
+            $title = 'New Employee Added';
+            $message = "{$employeeName} has been added to the system as {$data['position']}";
+        } elseif ($action === 'update') {
+            $title = 'Employee Profile Updated';
+            $message = "{$employeeName}'s profile was updated";
+        } else {
+            return;
+        }
+        
+        // Get all admin users to notify
+        $admins = $adminModel->findAll();
+        
+        foreach ($admins as $admin) {
+            $notificationModel->create([
+                'recipient_type' => 'admin',
+                'recipient_id' => $admin['id'],
+                'type' => 'system',
+                'title' => $title,
+                'message' => $message,
+                'link' => '/employee',
+                'is_read' => false
+            ]);
+        }
+    }
+
     public function records() {
         $employees = $this->employeeModel->findAll();
         
@@ -50,7 +88,8 @@ class EmployeeController extends Controller {
                 'position' => $position,
                 'status' => $_POST['status'] ?: 'Active',
                 'daily_rate' => $_POST['daily_rate'] ?: 0,
-                'has_deduction' => isset($_POST['has_deduction']) ? 1 : 0
+                'has_deduction' => isset($_POST['has_deduction']) ? 1 : 0,
+                'performance_allowance' => $_POST['performance_allowance'] ?: 0
             ];
 
             // Handle profile image upload
@@ -70,6 +109,7 @@ class EmployeeController extends Controller {
 
             if ($this->employeeModel->create($data)) {
                 $_SESSION['success'] = 'Employee created successfully';
+                $this->sendEmployeeNotification('create', $data);
                 $this->redirect('/employee');
             } else {
                 $_SESSION['error'] = 'Failed to create employee';
@@ -107,7 +147,8 @@ class EmployeeController extends Controller {
                 'position' => $_POST['position'] ?: null,
                 'status' => $_POST['status'] ?: 'Active',
                 'daily_rate' => $_POST['daily_rate'] ?: 0,
-                'has_deduction' => isset($_POST['has_deduction']) ? 1 : 0
+                'has_deduction' => isset($_POST['has_deduction']) ? 1 : 0,
+                'performance_allowance' => $_POST['performance_allowance'] ?: 0
             ];
 
             // Handle profile image upload
@@ -155,6 +196,7 @@ class EmployeeController extends Controller {
             if ($this->employeeModel->update($id, $data)) {
                 if (!isset($_SESSION['error'])) {
                     $_SESSION['success'] = 'Employee updated successfully';
+                    $this->sendEmployeeNotification('update', $data);
                 }
                 $this->redirect('/employee');
             } else {

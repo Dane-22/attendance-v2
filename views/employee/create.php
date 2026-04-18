@@ -38,6 +38,11 @@
         </div>
 
         <div class="form-group">
+            <label for="performance_allowance">Performance Allowance</label>
+            <input type="number" id="performance_allowance" name="performance_allowance" step="0.01" min="0" placeholder="0.00">
+        </div>
+
+        <div class="form-group">
             <button type="submit" class="btn btn-primary">Save Employee</button>
             <a href="<?= $baseUrl ?>/employee" class="btn btn-secondary">Cancel</a>
         </div>

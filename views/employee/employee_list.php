@@ -495,6 +495,10 @@ function getAvatarInitials($emp) {
                         <label>Daily Rate (₱)</label>
                         <input type="number" name="daily_rate" step="0.01" placeholder="0.00">
                     </div>
+                    <div class="form-group">
+                        <label>Performance Allowance (₱)</label>
+                        <input type="number" name="performance_allowance" step="0.01" placeholder="0.00">
+                    </div>
                     <div class="form-group full-width">
                         <label>Government Deductions</label>
                         <div class="toggle-container">
@@ -606,6 +610,10 @@ function getAvatarInitials($emp) {
                     <div class="form-group">
                         <label>Daily Rate (₱)</label>
                         <input type="number" id="edit_daily_rate" name="daily_rate" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Performance Allowance (₱)</label>
+                        <input type="number" id="edit_performance_allowance" name="performance_allowance" step="0.01" placeholder="0.00">
                     </div>
                     <div class="form-group full-width">
                         <label>Government Deductions</label>
@@ -1138,16 +1146,95 @@ function getAvatarInitials($emp) {
         document.getElementById('previewImg').src = '<?= $baseUrl ?>/assets/images/default-avatar.svg';
     }
 
-    function previewImage(event) {
+    // Store compressed image for add form
+    let compressedAddImageBlob = null;
+
+    async function previewImage(event) {
         const file = event.target.files[0];
-        if (file) {
+        if (!file) return;
+
+        // Check if file is already small enough
+        if (file.size <= 500 * 1024) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 document.getElementById('previewImg').src = e.target.result;
             };
             reader.readAsDataURL(file);
+            compressedAddImageBlob = null;
+            return;
         }
+
+        // Show compression message
+        const uploadHint = document.querySelector('#addEmployeeModal .upload-hint');
+        const originalText = uploadHint.textContent;
+        uploadHint.textContent = 'Compressing image... Please wait.';
+        uploadHint.style.color = 'var(--accent-color)';
+
+        try {
+            const result = await compressImageClientSide(file);
+            compressedAddImageBlob = result.blob;
+
+            // Update preview
+            document.getElementById('previewImg').src = result.dataUrl;
+
+            // Update hint with compression info
+            const originalMB = (result.originalSize / 1024 / 1024).toFixed(2);
+            const compressedKB = Math.round(result.compressedSize / 1024);
+            uploadHint.textContent = `Compressed from ${originalMB}MB to ${compressedKB}KB ✓`;
+            uploadHint.style.color = '#4caf50';
+
+            console.log(`Add image compressed: ${originalMB}MB → ${compressedKB}KB`);
+        } catch (error) {
+            console.error('Compression failed:', error);
+            uploadHint.textContent = 'Compression failed. Using original file.';
+            uploadHint.style.color = '#f44336';
+
+            // Fall back to original
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('previewImg').src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            compressedAddImageBlob = null;
+        }
+
+        // Reset hint after 3 seconds
+        setTimeout(() => {
+            uploadHint.textContent = originalText;
+            uploadHint.style.color = '';
+        }, 3000);
     }
+
+    // Intercept add form submission to use compressed image
+    document.getElementById('addEmployeeForm').addEventListener('submit', function(e) {
+        if (compressedAddImageBlob) {
+            e.preventDefault();
+
+            // Create new FormData with compressed image
+            const formData = new FormData(this);
+            formData.delete('profile_image');
+            formData.append('profile_image', compressedAddImageBlob, 'compressed_profile.jpg');
+
+            // Submit via fetch
+            fetch(this.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok || response.redirected) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to create employee');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error creating employee');
+            });
+
+            compressedAddImageBlob = null;
+        }
+    });
 
     function resetPassword() {
         alert('Password will be reset to default: jajrconstruction');
@@ -1179,6 +1266,7 @@ function getAvatarInitials($emp) {
             document.getElementById('edit_position').value = employee.position;
             document.getElementById('edit_status').value = employee.status || 'Active';
             document.getElementById('edit_daily_rate').value = employee.daily_rate || '';
+            document.getElementById('edit_performance_allowance').value = employee.performance_allowance || '';
             document.getElementById('edit_has_deduction').checked = employee.has_deduction == 1;
             
             // Set profile image
@@ -1208,16 +1296,153 @@ function getAvatarInitials($emp) {
         document.getElementById('editPreviewImg').src = '<?= $baseUrl ?>/assets/images/default-avatar.svg';
     }
 
-    function previewEditImage(event) {
+    // Compress image client-side before upload
+    function compressImageClientSide(file, maxWidth = 1200, maxSizeKB = 500, quality = 0.85) {
+        return new Promise((resolve, reject) => {
+            if (!file.type.startsWith('image/')) {
+                reject(new Error('File is not an image'));
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    let width = img.width;
+                    let height = img.height;
+
+                    // Calculate new dimensions
+                    if (width > maxWidth) {
+                        height = Math.round(height * (maxWidth / width));
+                        width = maxWidth;
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Try to compress to target size
+                    let compressedQuality = quality;
+                    let blob;
+
+                    const tryCompression = () => {
+                        canvas.toBlob((result) => {
+                            blob = result;
+                            if (blob.size > maxSizeKB * 1024 && compressedQuality > 0.5) {
+                                compressedQuality -= 0.1;
+                                tryCompression();
+                            } else {
+                                resolve({
+                                    blob: blob,
+                                    dataUrl: canvas.toDataURL('image/jpeg', compressedQuality),
+                                    originalSize: file.size,
+                                    compressedSize: blob.size
+                                });
+                            }
+                        }, 'image/jpeg', compressedQuality);
+                    };
+
+                    tryCompression();
+                };
+                img.onerror = () => reject(new Error('Failed to load image'));
+                img.src = e.target.result;
+            };
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // Store compressed image for form submission
+    let compressedImageBlob = null;
+
+    async function previewEditImage(event) {
         const file = event.target.files[0];
-        if (file) {
+        if (!file) return;
+
+        // Check if file is already small enough
+        if (file.size <= 500 * 1024) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 document.getElementById('editPreviewImg').src = e.target.result;
             };
             reader.readAsDataURL(file);
+            compressedImageBlob = null; // Use original file
+            return;
         }
+
+        // Show compression message
+        const uploadHint = document.querySelector('#editEmployeeModal .upload-hint');
+        const originalText = uploadHint.textContent;
+        uploadHint.textContent = 'Compressing image... Please wait.';
+        uploadHint.style.color = 'var(--accent-color)';
+
+        try {
+            const result = await compressImageClientSide(file);
+            compressedImageBlob = result.blob;
+
+            // Update preview
+            document.getElementById('editPreviewImg').src = result.dataUrl;
+
+            // Update hint with compression info
+            const originalMB = (result.originalSize / 1024 / 1024).toFixed(2);
+            const compressedKB = Math.round(result.compressedSize / 1024);
+            uploadHint.textContent = `Compressed from ${originalMB}MB to ${compressedKB}KB ✓`;
+            uploadHint.style.color = '#4caf50';
+
+            console.log(`Image compressed: ${originalMB}MB → ${compressedKB}KB`);
+        } catch (error) {
+            console.error('Compression failed:', error);
+            uploadHint.textContent = 'Compression failed. Using original file.';
+            uploadHint.style.color = '#f44336';
+
+            // Fall back to original
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('editPreviewImg').src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            compressedImageBlob = null;
+        }
+
+        // Reset hint after 3 seconds
+        setTimeout(() => {
+            uploadHint.textContent = originalText;
+            uploadHint.style.color = '';
+        }, 3000);
     }
+
+    // Intercept form submission to use compressed image
+    document.getElementById('editEmployeeForm').addEventListener('submit', function(e) {
+        if (compressedImageBlob) {
+            e.preventDefault();
+
+            // Create new FormData with compressed image
+            const formData = new FormData(this);
+            formData.delete('profile_image');
+            formData.append('profile_image', compressedImageBlob, 'compressed_profile.jpg');
+
+            // Submit via fetch
+            fetch(this.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok || response.redirected) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to update employee');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating employee');
+            });
+
+            compressedImageBlob = null;
+        }
+    });
 
     function resetEditPassword() {
         alert('Password will be reset to default: jajrconstruction');

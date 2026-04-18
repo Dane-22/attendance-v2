@@ -67,6 +67,9 @@ class PayrollController extends Controller {
             // Optionally save the calculated payroll
             $saveResults = $this->payrollModel->saveBatchPayroll($payrollData);
 
+            // Check for overtime and send notifications
+            $this->checkAndNotifyOvertime($payrollData['employees'] ?? []);
+
             $this->jsonResponse([
                 'success' => true,
                 'data' => $payrollData,
@@ -74,6 +77,49 @@ class PayrollController extends Controller {
             ]);
         } catch (Exception $e) {
             $this->jsonResponse(['error' => 'Failed to calculate payroll: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Check for overtime and send notifications to admins
+     */
+    private function checkAndNotifyOvertime($employees) {
+        require_once __DIR__ . '/../models/Notification.php';
+        require_once __DIR__ . '/../models/Admin.php';
+        
+        $notificationModel = new Notification();
+        $adminModel = new Admin();
+        
+        $overtimeEmployees = [];
+        
+        foreach ($employees as $employee) {
+            $overtimeHours = $employee['overtime_hours'] ?? 0;
+            if ($overtimeHours > 0) {
+                $overtimeEmployees[] = [
+                    'name' => $employee['name'],
+                    'hours' => $overtimeHours
+                ];
+            }
+        }
+        
+        if (empty($overtimeEmployees)) return;
+        
+        // Get all admin users to notify
+        $admins = $adminModel->findAll();
+        
+        // Send individual notifications for each employee with overtime
+        foreach ($overtimeEmployees as $emp) {
+            foreach ($admins as $admin) {
+                $notificationModel->create([
+                    'recipient_type' => 'admin',
+                    'recipient_id' => $admin['id'],
+                    'type' => 'payroll',
+                    'title' => 'Overtime Detected',
+                    'message' => "{$emp['name']} has {$emp['hours']} hours of overtime this week",
+                    'link' => '/finance/payroll',
+                    'is_read' => false
+                ]);
+            }
         }
     }
 
