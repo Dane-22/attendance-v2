@@ -50,6 +50,10 @@ class BranchQRController extends Controller {
             if (isset($urlParts['query'])) {
                 parse_str($urlParts['query'], $params);
                 $extractedCode = $params['emp_code'] ?? null;
+                // URL decode and trim whitespace
+                if ($extractedCode) {
+                    $extractedCode = trim(urldecode($extractedCode));
+                }
                 error_log('BranchQRController: Extracted emp_code: ' . ($extractedCode ?? 'NULL'));
             }
         }
@@ -63,6 +67,8 @@ class BranchQRController extends Controller {
             error_log('BranchQRController: Failed to extract code from QR data');
             return ['error' => 'Invalid QR code format. Expected URL with emp_code or JAJR-EMP: format'];
         }
+
+        error_log('BranchQRController: Looking up employee with code: [' . $extractedCode . ']');
 
         // Find employee by employee_code
         $employee = $this->employeeModel->findByEmployeeCode($extractedCode);
