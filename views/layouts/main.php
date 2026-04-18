@@ -676,6 +676,7 @@
                 </div>
             </div>
             <?php $baseUrl = dirname($_SERVER['SCRIPT_NAME']); ?>
+<?php $baseUrl = ($baseUrl === '/' || $baseUrl === '\\') ? '' : $baseUrl; ?>
             <nav class="nav-menu">
                 <a href="<?= $baseUrl ?>/dashboard" class="nav-item <?= ($_SERVER["REQUEST_URI"] == "/" || strpos($_SERVER["REQUEST_URI"], "/dashboard") !== false) ? "active" : "" ?>">
                     <i class="fas fa-th-large"></i>
