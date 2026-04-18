@@ -37,20 +37,30 @@ class BranchQRController extends Controller {
     private function parseQRAndGetEmployee($qrData, $branchCode) {
         $extractedCode = null;
 
-        // Check if V1 URL format (starts with http:// or https://)
-        if (strpos($qrData, 'http://') === 0 || strpos($qrData, 'https://') === 0) {
+        // Trim whitespace and newlines that QR scanners often include
+        $qrData = trim($qrData);
+        error_log('BranchQRController: Parsing QR data: ' . substr($qrData, 0, 100));
+
+        // Check if V1 URL format (case-insensitive)
+        $lowerQrData = strtolower($qrData);
+        if (strpos($lowerQrData, 'http://') === 0 || strpos($lowerQrData, 'https://') === 0) {
+            error_log('BranchQRController: Detected V1 URL format');
             $urlParts = parse_url($qrData);
+            error_log('BranchQRController: URL parts: ' . json_encode($urlParts));
             if (isset($urlParts['query'])) {
                 parse_str($urlParts['query'], $params);
                 $extractedCode = $params['emp_code'] ?? null;
+                error_log('BranchQRController: Extracted emp_code: ' . ($extractedCode ?? 'NULL'));
             }
         }
         // Check if V2 text format: JAJR-EMP:id|code|name
         elseif (preg_match('/JAJR-EMP:(\d+)\|([^|]+)\|(.+)/', $qrData, $matches)) {
+            error_log('BranchQRController: Detected V2 text format');
             $extractedCode = $matches[2];
         }
 
         if (empty($extractedCode)) {
+            error_log('BranchQRController: Failed to extract code from QR data');
             return ['error' => 'Invalid QR code format. Expected URL with emp_code or JAJR-EMP: format'];
         }
 
