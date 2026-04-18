@@ -1,5 +1,7 @@
 <?php
 $title = 'Attendance Audit';
+$baseUrl = dirname($_SERVER['SCRIPT_NAME']);
+$baseUrl = ($baseUrl === '/' || $baseUrl === '\\') ? '' : $baseUrl;
 
 // Data passed from controller:
 // $currentMonth, $selectedDate, $calendarData, $totalRecords, $currentlyPresent, $completedShifts, $absent, $attendanceRecords
@@ -1357,7 +1359,7 @@ async function loadEmployeeCalendar() {
     // Fetch employee attendance data for the month
     const year = currentModalYear;
     const month = currentModalMonth + 1;
-    const basePath = '<?= dirname($_SERVER['SCRIPT_NAME']) ?>';
+    const basePath = '<?= $baseUrl ?>';
     
     try {
         const response = await fetch(`${basePath}/api/attendance/employee-calendar?employee_code=${currentEmployeeCode}&year=${year}&month=${month}`);
@@ -1509,7 +1511,7 @@ async function loadBranchCalendar() {
     // Fetch branch attendance data for the month
     const year = currentBranchModalYear;
     const month = currentBranchModalMonth + 1;
-    const basePath = '<?= dirname($_SERVER['SCRIPT_NAME']) ?>';
+    const basePath = '<?= $baseUrl ?>';
     
     try {
         const response = await fetch(`${basePath}/api/attendance/branch-calendar?branch_name=${encodeURIComponent(currentBranchName)}&year=${year}&month=${month}`);
