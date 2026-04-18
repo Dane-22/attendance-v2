@@ -133,23 +133,24 @@ class BranchQRController extends Controller {
     }
 
     public function previewScan() {
-        // Check if branch device is logged in
-        if (empty($_SESSION['branch_code'])) {
-            header('Content-Type: application/json');
-            echo json_encode(['error' => 'Not authenticated']);
-            return;
-        }
+        try {
+            // Check if branch device is logged in
+            if (empty($_SESSION['branch_code'])) {
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'Not authenticated']);
+                return;
+            }
 
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Content-Type: application/json');
-            echo json_encode(['error' => 'Invalid request method']);
-            return;
-        }
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'Invalid request method']);
+                return;
+            }
 
-        $qrData = $_POST['qr_data'] ?? '';
-        $branchCode = $_SESSION['branch_code'];
+            $qrData = $_POST['qr_data'] ?? '';
+            $branchCode = $_SESSION['branch_code'];
 
-        $result = $this->parseQRAndGetEmployee($qrData, $branchCode);
+            $result = $this->parseQRAndGetEmployee($qrData, $branchCode);
         if (isset($result['error'])) {
             header('Content-Type: application/json');
             echo json_encode($result);
@@ -205,9 +206,16 @@ class BranchQRController extends Controller {
                 'code' => $employee['employee_code']
             ]
         ]);
+        } catch (Throwable $e) {
+            error_log('BranchQRController previewScan ERROR: ' . $e->getMessage());
+            error_log('BranchQRController Stack trace: ' . $e->getTraceAsString());
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Server error: ' . $e->getMessage()]);
+        }
     }
 
     public function processScan() {
+        try {
         // Check if branch device is logged in
         if (empty($_SESSION['branch_code'])) {
             error_log('BranchQRController: No branch_code in session');
@@ -316,6 +324,12 @@ class BranchQRController extends Controller {
         } else {
             header('Content-Type: application/json');
             echo json_encode(['error' => $result['error'] ?? 'Failed to record attendance']);
+        }
+        } catch (Throwable $e) {
+            error_log('BranchQRController processScan ERROR: ' . $e->getMessage());
+            error_log('BranchQRController Stack trace: ' . $e->getTraceAsString());
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Server error: ' . $e->getMessage()]);
         }
     }
 
