@@ -54,12 +54,16 @@ class BranchQRController extends Controller {
             error_log('BranchQRController: URL parts: ' . json_encode($urlParts));
             if (isset($urlParts['query'])) {
                 parse_str($urlParts['query'], $params);
+                error_log('BranchQRController: URL params: ' . json_encode($params));
                 $extractedCode = $params['emp_code'] ?? null;
+                error_log('BranchQRController: Raw emp_code from params: ' . ($extractedCode ?? 'NULL'));
                 // URL decode and trim whitespace
                 if ($extractedCode) {
                     $extractedCode = trim(urldecode($extractedCode));
                 }
-                error_log('BranchQRController: Extracted emp_code: ' . ($extractedCode ?? 'NULL'));
+                error_log('BranchQRController: Final extracted code: ' . ($extractedCode ?? 'NULL'));
+            } else {
+                error_log('BranchQRController: No query string found in URL');
             }
         }
         // Check if V2 text format: JAJR-EMP:id|code|name
