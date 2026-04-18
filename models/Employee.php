@@ -133,6 +133,14 @@ class Employee extends Model {
         return $stmt->fetch();
     }
 
+    public function findByEmployeeCodeCI($code) {
+        $query = 'SELECT * FROM ' . $this->table . ' WHERE LOWER(employee_code) = LOWER(:code) LIMIT 1';
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':code', $code);
+        $stmt->execute();
+        return $stmt->fetch();
+    }
+
     public function countAll() {
         $query = 'SELECT COUNT(*) FROM ' . $this->table;
         $stmt = $this->db->query($query);

@@ -68,10 +68,12 @@ class BranchQRController extends Controller {
             return ['error' => 'Invalid QR code format. Expected URL with emp_code or JAJR-EMP: format'];
         }
 
+        // Normalize to uppercase (V1 codes like E0006 are uppercase)
+        $extractedCode = strtoupper($extractedCode);
         error_log('BranchQRController: Looking up employee with code: [' . $extractedCode . ']');
 
-        // Find employee by employee_code
-        $employee = $this->employeeModel->findByEmployeeCode($extractedCode);
+        // Find employee by employee_code (case-insensitive)
+        $employee = $this->employeeModel->findByEmployeeCodeCI($extractedCode);
         if (!$employee) {
             error_log('BranchQRController: Employee not found with code: [' . $extractedCode . ']');
             return ['error' => 'Employee not found'];
