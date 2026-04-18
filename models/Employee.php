@@ -161,6 +161,14 @@ class Employee extends Model {
         return $stmt->fetchAll();
     }
 
+    public function updateBranchName($id, $branchName) {
+        $query = 'UPDATE ' . $this->table . ' SET branch_name = :branch_name WHERE id = :id';
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':branch_name', $branchName);
+        return $stmt->execute();
+    }
+
     public function getNextEmployeeCode($position) {
         $currentYear = date('Y');
         $prefix = '';

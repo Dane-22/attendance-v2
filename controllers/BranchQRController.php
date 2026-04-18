@@ -112,9 +112,17 @@ class BranchQRController extends Controller {
         }
 
         // Validate employee is assigned to current branch (compare branch_name)
-        if ($employee['branch_name'] !== $currentBranch['branch_name']) {
-            error_log('BranchQRController: Branch mismatch - Employee: ' . $employee['branch_name'] . ', Current: ' . $currentBranch['branch_name']);
+        // Allow employees with NULL/empty branch_name to check in anywhere
+        $employeeBranch = $employee['branch_name'] ?? null;
+        $currentBranchName = $currentBranch['branch_name'] ?? null;
+
+        if (!empty($employeeBranch) && $employeeBranch !== $currentBranchName) {
+            error_log('BranchQRController: Branch mismatch - Employee branch: ' . $employeeBranch . ', Current branch: ' . $currentBranchName);
             return ['error' => 'Employee not assigned to this branch'];
+        }
+
+        if (empty($employeeBranch)) {
+            error_log('BranchQRController: Employee has no branch assignment - allowing check-in at ' . $currentBranchName);
         }
 
         if ($employee['status'] !== 'Active') {
@@ -227,6 +235,25 @@ class BranchQRController extends Controller {
         }
 
         $employee = $result['employee'];
+
+        // Auto-transfer: Update employee's branch if different from current branch
+        $currentBranch = $this->branchModel->findByCode($branchCode);
+        if ($currentBranch && isset($employee['branch_name'])) {
+            $currentBranchName = $currentBranch['branch_name'];
+            $employeeBranch = $employee['branch_name'];
+
+            if (empty($employeeBranch) || $employeeBranch !== $currentBranchName) {
+                try {
+                    $this->employeeModel->updateBranchName($employee['id'], $currentBranchName);
+                    error_log('BranchQRController: Auto-transferred employee ' . $employee['id'] . ' from ' . ($employeeBranch ?: 'NULL') . ' to ' . $currentBranchName);
+                    // Update local employee data for response
+                    $employee['branch_name'] = $currentBranchName;
+                } catch (Exception $e) {
+                    error_log('BranchQRController: Failed to update branch: ' . $e->getMessage());
+                    // Continue anyway - don't block attendance due to branch update failure
+                }
+            }
+        }
 
         // Set Philippines timezone
         date_default_timezone_set('Asia/Manila');
